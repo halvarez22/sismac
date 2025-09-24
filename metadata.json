@@ -1,0 +1,5 @@
+{
+  "name": "SISMAC: Dashboard Gerencial",
+  "description": "Dashboard Gerencial para el Sistema Inteligente de Suministro y Materiales para Calzado (SISMAC). Visualiza métricas clave de rentabilidad, compras y almacén impulsadas por IA para optimizar la toma de decisiones en la industria del calzado.",
+  "requestFramePermissions": []
+}
