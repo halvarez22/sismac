@@ -1,7 +1,0 @@
-api key Gemini SISMAC
-
-Gemini api key
-AIzaSyAAAenxEqpDI22Pbr_CgS4MYUBnSojcVqg
-
-Gropq api key
-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
