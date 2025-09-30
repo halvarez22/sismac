@@ -21,7 +21,7 @@ La aplicación se estructura en los siguientes módulos, cada uno enfocado en un
 ## 3. Características Clave
 
 -   **Visibilidad 360°:** Todos los módulos están interconectados, permitiendo un flujo de datos coherente y en tiempo real.
--   **Inteligencia Artificial Integrada:** SISMAC utiliza el poder de la API de Gemini de Google para:
+-   **Inteligencia Artificial Integrada:** SISMAC utiliza el poder de la API de Groq para:
     -   **SISMAC Copilot:** Un asistente conversacional que permite a los usuarios preguntar sobre los datos de la aplicación en lenguaje natural.
     -   **Sugerencia de Materiales Sustitutos:** Analiza el inventario para proponer alternativas a materiales en el BOM, calculando el impacto en costo.
     -   **Análisis Estratégico:** Genera insights accionables en el Dashboard Gerencial.
@@ -37,5 +37,5 @@ La aplicación se estructura en los siguientes módulos, cada uno enfocado en un
 -   **Frontend:** React con TypeScript
 -   **Estilos:** Tailwind CSS
 -   **Visualización de Datos:** Recharts
--   **Inteligencia Artificial:** Google Gemini API
+-   **Inteligencia Artificial:** Groq API
 -   **Enrutamiento:** React Router

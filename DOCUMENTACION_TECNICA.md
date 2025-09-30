@@ -53,25 +53,27 @@ La comunicación entre módulos es indirecta y se gestiona a través del estado 
 5.  **Re-renderizado:** React detecta el cambio de estado. El componente `Abastecimiento.tsx`, que también consume `purchaseSuggestions` del contexto, se vuelve a renderizar.
 6.  **Resultado:** La nueva sugerencia de compra, vinculada a `OP-5512`, aparece ahora en la "Bandeja de Sugerencias" del módulo de Abastecimiento, lista para que un comprador la procese.
 
-## 4. Integración con la IA (Google Gemini)
+## 4. Integración con la IA (Groq API)
 
 La integración con la IA se realiza de forma asíncrona en componentes específicos para no bloquear la interfaz de usuario.
 
--   **Inicialización:** Se instancia el cliente de la API con `new GoogleGenAI({ apiKey: process.env.API_KEY })`. **Importante:** La `API_KEY` debe estar definida como una variable de entorno en el entorno de ejecución. El código no debe manejar la clave directamente. En caso de no estar presente, las funcionalidades de IA entran en un "modo demo" con respuestas estáticas.
--   **Manejo de Carga y Errores:** Todos los componentes de IA manejan un estado de `loading` para mostrar esqueletos o indicadores de carga. También gestionan un estado de `error` para informar al usuario si la llamada a la API falla.
+-   **Inicialización:** Se instancia el cliente de la API con `new Groq({ apiKey: import.meta.env.VITE_GROQ_API_KEY })`. **Importante:** La `VITE_GROQ_API_KEY` debe estar definida como una variable de entorno en el archivo `.env` o en el entorno de ejecución. El código no debe manejar la clave directamente. En caso de no estar presente, las funcionalidades de IA entran en un "modo demo" con respuestas estáticas simuladas.
+-   **Manejo de Carga y Errores:** Todos los componentes de IA manejan un estado de `loading` para mostrar indicadores de carga animados. También gestionan un estado de `error` para informar al usuario si la llamada a la API falla, con mensajes descriptivos y opciones de reintento.
 
 ### a. SISMAC Copilot (`Copilot.tsx`)
 
--   **Técnica:** Utiliza el método `ai.chats.create()` para establecer una sesión de conversación persistente.
--   **Contexto:** Para cada pregunta del usuario, se construye un *prompt* que incluye el **estado completo de la aplicación** (`appData`) serializado en JSON. Esto proporciona a la IA todo el contexto necesario para dar respuestas precisas.
--   **Streaming:** La respuesta se maneja con `chat.sendMessageStream()`. El componente itera sobre los *chunks* de la respuesta a medida que llegan, actualizando el estado de la UI para mostrar el texto palabra por palabra, lo que resulta en una experiencia de usuario fluida.
--   **System Prompt:** Se utiliza un `systemInstruction` al crear el chat para definir el rol y las directrices de la IA ("Eres SISMAC Copilot, un asistente experto...").
+-   **Técnica:** Utiliza el método `groq.chat.completions.create()` para generar respuestas conversacionales.
+-   **Contexto:** Para cada pregunta del usuario, se construye un *prompt* que incluye el **estado completo de la aplicación** (`appData`) serializado en JSON. Esto proporciona a la IA todo el contexto necesario para dar respuestas precisas sobre inventario, órdenes de producción, modelos de producto y proveedores.
+-   **Streaming:** La respuesta se maneja con el parámetro `stream: true` en la llamada a la API. El componente procesa los chunks de respuesta en tiempo real, actualizando el estado de la UI para mostrar el texto palabra por palabra, creando una experiencia de conversación fluida.
+-   **System Message:** Se incluye un mensaje de sistema en el array de mensajes para definir el rol y las directrices de la IA ("Eres SISMAC Copilot, un asistente experto en gestión de supply chain...").
+-   **Historial de Conversación:** Se mantiene un historial completo de mensajes (usuario/modelo) para proporcionar contexto en conversaciones continuas.
 
 ### b. Sugerencia de Materiales Sustitutos (`ProductModelModal.tsx`)
 
--   **Técnica:** Utiliza el método `ai.models.generateContent()` para solicitudes de una sola vez.
--   **Respuesta Estructurada (JSON):** Se utiliza la configuración `responseMimeType: "application/json"` y `responseSchema` en la llamada. Esto obliga al modelo de Gemini a devolver una respuesta en formato JSON que se adhiere a un esquema predefinido (`{ suggestions: [{ substituteSku, justification, costImpactPerPair }] }`), garantizando que la respuesta pueda ser parseada de forma segura.
--   **Prompting:** El *prompt* es altamente específico. Incluye el material original que se desea sustituir y la lista completa del inventario actual para que la IA realice su análisis.
+-   **Técnica:** Utiliza el método `groq.chat.completions.create()` para generar análisis de sustitución de materiales.
+-   **Respuesta Estructurada (JSON):** Se especifica en el prompt que la respuesta debe ser en formato JSON válido con un esquema específico (`{ suggestions: [{ substituteSku, justification, costImpactPerPair }] }`), permitiendo el parseo seguro de la respuesta.
+-   **Prompting:** El *prompt* es altamente específico e incluye el material original que se desea sustituir, sus propiedades (categoría, precio, proveedor) y la lista completa del inventario actual para que la IA realice un análisis comparativo preciso.
+-   **Cálculo de Impacto:** La IA calcula automáticamente el impacto en costo por par basándose en las diferencias de precio y consumo entre el material original y el sustituto sugerido.
 
 ## 5. Estilos y UI
 
@@ -86,3 +88,62 @@ La integración con la IA se realiza de forma asíncrona en componentes específ
 -   **Uso:** Se emplea para todos los gráficos de la aplicación (líneas, barras, pastel, compuestos).
 -   **Componente `ChartCard`:** Se utiliza un componente contenedor (`ChartCard`) para estandarizar la apariencia de todos los gráficos (título, padding, bordes).
 -   **Responsividad:** Los gráficos están envueltos en `ResponsiveContainer` de Recharts para que se ajusten automáticamente al tamaño de su contenedor.
+
+## 7. Nuevas Funcionalidades Implementadas
+
+### a. Carga Automática de BOM VAZZA (`VazzaBOMUploadModal.tsx`)
+
+-   **Tecnología:** Utiliza la librería `xlsx` para parsing de archivos Excel.
+-   **Validación Inteligente:** Sistema de filtros automáticos que descarta fechas (MM/DD/YY, DD/MM/YY), códigos administrativos (KARLA, CSC, NOM 020), palabras clave administrativas (CLIENTE:, FECHA, PEDIDO), texto muy corto, códigos numéricos puros y códigos técnicos.
+-   **Mapeo Automático:** Algoritmo inteligente que identifica columnas de Excel basándose en patrones de datos (headers, tipos de datos, contenido de muestra).
+-   **Integración Completa:** Los materiales válidos se integran automáticamente al inventario y al modelo de producto, creando la BOM completa.
+
+### b. Sistema CRUD Completo para Modelos (`Ingenieria.tsx`)
+
+-   **Arquitectura:** Implementa operaciones Create, Read, Update, Delete con confirmación de eliminación.
+-   **Estado de Persistencia:** Todos los cambios se guardan automáticamente en localStorage.
+-   **Validación de Datos:** Verificación de integridad antes de guardar cambios.
+-   **Interfaz de Usuario:** Modales dedicados para creación/edición con autocompletado de materiales.
+
+### c. Alertas de Costos con IA (`CreatePurchaseOrderModal.tsx`)
+
+-   **Monitoreo Automático:** Detecta precios unitarios que exceden el 20% del promedio histórico.
+-   **Análisis Comparativo:** Muestra costos históricos, proveedores alternativos y justificaciones.
+-   **Prevención de Errores:** Requiere confirmación explícita para precios elevados.
+-   **Integración con IA:** Recomendaciones automáticas de optimización de costos.
+
+### d. Análisis Predictivo de Inventario (`Almacen.tsx`)
+
+-   **Patrones de Consumo:** IA analiza histórico para predecir demanda futura.
+-   **Optimización de Niveles:** Sugerencias automáticas de puntos de reorden.
+-   **Análisis ABC:** Clasificación de inventario por importancia (A: alto valor, B: medio, C: bajo).
+-   **Alertas Preventivas:** Notificaciones de materiales críticos antes de que se agoten.
+
+### e. Dashboard Ejecutivo Mejorado (`Dashboard.tsx`)
+
+-   **KPIs Adicionales:** Incluye Valor Total del Inventario, Número de Modelos Activos.
+-   **Perspectivas IA Avanzadas:** Análisis de ahorro, riesgos de suministro, mejoras operativas.
+-   **Exportación de Datos:** Funcionalidad CSV para análisis externos.
+-   **Visualizaciones Interactivas:** Gráficos drill-down y filtros dinámicos.
+
+## 8. Persistencia de Datos
+
+-   **Tecnología:** **localStorage** del navegador para persistencia de datos.
+-   **Estructura:** Datos organizados por claves específicas (`sismac_productModels`, `sismac_inventoryData`, etc.).
+-   **Sincronización:** Estado de React sincronizado automáticamente con localStorage.
+-   **Recuperación:** Sistema robusto de carga de datos con manejo de errores.
+-   **Backup:** Los datos críticos se respaldan automáticamente en cada operación.
+
+## 9. Control de Acceso y Seguridad
+
+-   **Roles Definidos:** 6 roles específicos con permisos granulares (Administrador, Gerente, Ingeniero de Producto, Comprador, Almacenista, Planificador).
+-   **Navegación Filtrada:** El menú lateral se adapta dinámicamente según el rol del usuario.
+-   **Validación de Estado:** Solo usuarios activos pueden acceder al sistema.
+-   **Persistencia de Sesión:** La sesión se mantiene entre recargas de página.
+
+## 10. Manejo de Errores y Logging
+
+-   **Sistema de Logs:** Logging detallado en consola del navegador (F12) para debugging.
+-   **Mensajes de Error:** Mensajes descriptivos para el usuario en caso de fallos.
+-   **Recuperación de Errores:** Sistema de fallback que permite continuar operando incluso con errores parciales.
+-   **Modo Demo:** Funcionalidades completas disponibles incluso sin API de IA configurada.
