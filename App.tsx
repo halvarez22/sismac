@@ -1,3 +1,4 @@
+import { initializeAuth, loadData, saveData } from './src/dataService';
 import React, { useState, createContext, useContext, useMemo, useCallback, useEffect } from 'react';
 import { Routes, Route, Link, Outlet, useLocation, Navigate, useNavigate } from 'react-router-dom';
 
@@ -961,41 +962,48 @@ const MainLayout: React.FC = () => {
     const [isCopilotOpen, setIsCopilotOpen] = useState(false);
     
     // Application-wide state management
-    const [inventoryData, setInventoryData] = useState<MaterialInventory[]>(() => loadFromStorage('sismac_inventory', initialMaterialInventoryData.map(item => ({...item, status: calculateStatus(item.quantity, item.reorderPoint)}))));
-    const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>(() => loadFromStorage('sismac_purchaseOrders', initialPurchaseOrders));
-    const [productionOrders, setProductionOrders] = useState<ProductionOrder[]>(() => loadFromStorage('sismac_productionOrders', initialProductionOrders));
-    const [purchaseSuggestions, setPurchaseSuggestions] = useState<PurchaseSuggestion[]>(() => loadFromStorage('sismac_purchaseSuggestions', initialPurchaseSuggestions));
-    // Load test data if needed and initialize state
-    const [productModels, setProductModels] = useState<ProductModel[]>(() => {
-        const savedData = loadFromStorage('sismac_productModels', initialProductModels);
-        return savedData;
-    });
+    const [inventoryData, setInventoryData] = useState<MaterialInventory[]>([]);
+    const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
+    const [productionOrders, setProductionOrders] = useState<ProductionOrder[]>([]);
+    const [purchaseSuggestions, setPurchaseSuggestions] = useState<PurchaseSuggestion[]>([]);
+    const [productModels, setProductModels] = useState<ProductModel[]>([]);
+    const [isDataLoaded, setIsDataLoaded] = useState(false);
 
-    // Load test data if needed (after state initialization)
+    // Load data from Firebase/localStorage
     useEffect(() => {
-        console.log('🔧 Verificando datos iniciales...');
-        loadTestDataIfNeeded();
+        const loadAllData = async () => {
+            console.log('🔧 Cargando datos desde Firebase/localStorage...');
 
-        // Reload data from localStorage after potential data loading
-        const savedModels = loadFromStorage('sismac_productModels', initialProductModels);
-        const savedInventory = loadFromStorage('sismac_inventory', initialMaterialInventoryData.map(item => ({...item, status: calculateStatus(item.quantity, item.reorderPoint)})));
+            try {
+                const [models, inventory, orders, productions, suggestions] = await Promise.all([
+                    loadData('productModels', initialProductModels),
+                    loadData('inventory', initialMaterialInventoryData.map(item => ({...item, status: calculateStatus(item.quantity, item.reorderPoint)}))),
+                    loadData('purchaseOrders', initialPurchaseOrders),
+                    loadData('productionOrders', initialProductionOrders),
+                    loadData('purchaseSuggestions', initialPurchaseSuggestions)
+                ]);
 
-        if (savedModels.length > 0 && productModels.length === 0) {
-            console.log('🔄 Actualizando estados con datos cargados...');
-            setProductModels(savedModels);
-            setInventoryData(savedInventory);
-        }
+                setProductModels(models);
+                setInventoryData(inventory);
+                setPurchaseOrders(orders);
+                setProductionOrders(productions);
+                setPurchaseSuggestions(suggestions);
+                setIsDataLoaded(true);
 
-        console.log('✅ Verificación de datos iniciales completada');
+                console.log('✅ Datos cargados exitosamente');
+            } catch (error) {
+                console.error('❌ Error cargando datos:', error);
+                // Fallback to localStorage
+                setProductModels(loadFromStorage('sismac_productModels', initialProductModels));
+                setInventoryData(loadFromStorage('sismac_inventory', initialMaterialInventoryData.map(item => ({...item, status: calculateStatus(item.quantity, item.reorderPoint)}))));
+                setPurchaseOrders(loadFromStorage('sismac_purchaseOrders', initialPurchaseOrders));
+                setProductionOrders(loadFromStorage('sismac_productionOrders', initialProductionOrders));
+                setPurchaseSuggestions(loadFromStorage('sismac_purchaseSuggestions', initialPurchaseSuggestions));
+                setIsDataLoaded(true);
+            }
+        };
 
-        // Hacer funciones disponibles globalmente para debugging
-        (window as any).clearAndReloadData = clearAndReloadData;
-        (window as any).forceLoadRealData = forceLoadRealData;
-        (window as any).loadTestDataIfNeeded = loadTestDataIfNeeded;
-        console.log('🔧 Funciones de debugging disponibles:');
-        console.log('   • clearAndReloadData() - Limpia y recarga todos los datos');
-        console.log('   • forceLoadRealData() - Carga datos reales del modelo VAZZA directamente');
-        console.log('   • loadTestDataIfNeeded() - Carga datos reales si es necesario');
+        loadAllData();
     }, []);
 
     useEffect(() => {
@@ -1038,26 +1046,36 @@ const MainLayout: React.FC = () => {
         });
     };
 
-    // Save to localStorage when data changes
+    // Save to Firebase/localStorage when data changes
     useEffect(() => {
-        saveToStorage('sismac_inventory', inventoryData);
-    }, [inventoryData]);
+        if (isDataLoaded) {
+            saveData('inventory', inventoryData);
+        }
+    }, [inventoryData, isDataLoaded]);
 
     useEffect(() => {
-        saveToStorage('sismac_purchaseOrders', purchaseOrders);
-    }, [purchaseOrders]);
+        if (isDataLoaded) {
+            saveData('purchaseOrders', purchaseOrders);
+        }
+    }, [purchaseOrders, isDataLoaded]);
 
     useEffect(() => {
-        saveToStorage('sismac_productionOrders', productionOrders);
-    }, [productionOrders]);
+        if (isDataLoaded) {
+            saveData('productionOrders', productionOrders);
+        }
+    }, [productionOrders, isDataLoaded]);
 
     useEffect(() => {
-        saveToStorage('sismac_purchaseSuggestions', purchaseSuggestions);
-    }, [purchaseSuggestions]);
+        if (isDataLoaded) {
+            saveData('purchaseSuggestions', purchaseSuggestions);
+        }
+    }, [purchaseSuggestions, isDataLoaded]);
 
     useEffect(() => {
-        saveToStorage('sismac_productModels', productModels);
-    }, [productModels]);
+        if (isDataLoaded) {
+            saveData('productModels', productModels);
+        }
+    }, [productModels, isDataLoaded]);
 
     const contextValue = {
         inventoryData,
@@ -1155,6 +1173,10 @@ const MainLayout: React.FC = () => {
 // --- App Component ---
 function App() {
     const { user } = useAuth();
+
+    useEffect(() => {
+        initializeAuth();
+    }, []);
 
     return (
         <ToastProvider>
