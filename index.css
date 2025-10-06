@@ -16,4 +16,166 @@
     background: linear-gradient(135deg, theme(colors.blue.50) 0%, theme(colors.indigo.50) 100%);
     @apply dark:bg-slate-800 dark:border-slate-600 rounded-xl p-6 border border-blue-200;
   }
+
+  /* Scrollbars personalizadas */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    height: 6px;
+    width: 6px;
+  }
+
+  .scrollbar-track-slate-700::-webkit-scrollbar-track {
+    background: rgb(51 65 85);
+    border-radius: 3px;
+  }
+
+  .scrollbar-thumb-slate-600::-webkit-scrollbar-thumb {
+    background: rgb(71 85 105);
+    border-radius: 3px;
+  }
+
+  .scrollbar-thumb-slate-600::-webkit-scrollbar-thumb:hover {
+    background: rgb(100 116 139);
+  }
+
+  /* Estilos para modal redimensionable */
+  .modal-resizable {
+    resize: both;
+    overflow: auto;
+  }
+
+  .modal-resizable::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 16px;
+    height: 16px;
+    cursor: se-resize;
+    background: linear-gradient(-45deg, transparent 30%, rgb(71 85 105) 30%, rgb(71 85 105) 35%, transparent 35%),
+                linear-gradient(45deg, transparent 30%, rgb(71 85 105) 30%, rgb(71 85 105) 35%, transparent 35%);
+  }
+
+  /* Botones de control de ventana */
+  .window-controls button {
+    transition: all 0.2s ease;
+    border: none;
+    outline: none;
+  }
+
+  .window-controls button:hover {
+    transform: scale(1.1);
+  }
+
+  .window-controls button:active {
+    transform: scale(0.95);
+  }
+
+  /* Indicador de estado del modal */
+  .modal-status {
+    background: rgba(51, 65, 85, 0.8);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    color: rgb(148 163 184);
+  }
+
+  /* Animaciones para validación */
+  .field-error {
+    animation: shake 0.5s ease-in-out;
+  }
+
+  .field-success {
+    animation: pulse 0.3s ease-in-out;
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+  }
+
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+
+  /* Transiciones suaves para estados de validación */
+  .validation-feedback {
+    transition: all 0.3s ease-in-out;
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  .validation-feedback.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Animación para placeholders que aparecen/desaparecen */
+  .placeholder-overlay {
+    transition: all 0.2s ease-in-out;
+  }
+
+  /* Efectos hover suaves */
+  .smooth-hover {
+    transition: all 0.2s ease-in-out;
+  }
+
+  .smooth-hover:hover {
+    transform: translateY(-1px);
+  }
+
+  /* Eliminar completamente el placeholder nativo de campos de fecha */
+  input[type="date"] {
+    color-scheme: dark;
+  }
+
+  input[type="date"]::-webkit-datetime-edit-fields-wrapper {
+    background-color: transparent;
+    color: transparent;
+  }
+
+  input[type="date"]:focus::-webkit-datetime-edit-fields-wrapper {
+    background-color: transparent;
+    color: rgb(17 24 39); /* text-gray-900 */
+  }
+
+  input[type="date"]::-webkit-datetime-edit-text {
+    color: transparent;
+    background-color: transparent;
+  }
+
+  input[type="date"]:focus::-webkit-datetime-edit-text {
+    color: rgb(17 24 39); /* text-gray-900 */
+    background-color: transparent;
+  }
+
+  input[type="date"]::-webkit-datetime-edit-month-field,
+  input[type="date"]::-webkit-datetime-edit-day-field,
+  input[type="date"]::-webkit-datetime-edit-year-field {
+    color: transparent;
+    background-color: transparent;
+  }
+
+  input[type="date"]:focus::-webkit-datetime-edit-month-field,
+  input[type="date"]:focus::-webkit-datetime-edit-day-field,
+  input[type="date"]:focus::-webkit-datetime-edit-year-field {
+    color: rgb(17 24 39); /* text-gray-900 */
+    background-color: transparent;
+  }
+
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    background-color: transparent;
+    cursor: pointer;
+    color: transparent;
+  }
+
+  input[type="date"]:focus::-webkit-calendar-picker-indicator {
+    background-color: transparent;
+    cursor: pointer;
+    color: rgb(17 24 39); /* text-gray-900 */
+  }
 }

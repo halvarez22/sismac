@@ -1,250 +1,250 @@
-import React, { useState, useMemo } from 'react';
-import { useOutletContext } from 'react-router-dom';
-import { ProductionOrder, ProductionOrderStatus, MaterialInventory, PurchaseSuggestion, SupplierPerformance, ProductModel } from '../types';
-import ProductionOrderModal from './ProductionOrderModal';
-
-const allStatuses: ProductionOrderStatus[] = ['Pendiente', 'En Progreso', 'Completada', 'Retrasada'];
-
-// Simulación de datos de proveedores para la IA, en un caso real vendría de props o API
-const supplierData: SupplierPerformance[] = [
-    { id: 1, name: 'Pieles del Bajío S.A.', phone: '477-123-4567', email: 'ventas@pielesbajio.com', otd: 98, quality: 99.5, iaRecommendation: 'Óptimo' },
-    { id: 2, name: 'Suelas Modernas de León', phone: '477-987-6543', email: 'contacto@suelasmodernas.com', otd: 95, quality: 98.0, iaRecommendation: 'Recomendado' },
-    { id: 3, name: 'Herrajes Internacionales', phone: '55-5555-1234', email: 'info@herrajesint.com', otd: 89, quality: 99.2, iaRecommendation: 'Considerar' },
-    { id: 4, name: 'Forros y Textiles GTO', phone: '462-111-2233', email: 'pedidos@forrosgto.com', otd: 99, quality: 96.5, iaRecommendation: 'Recomendado' },
-];
-
-const getStatusClass = (status: ProductionOrderStatus): string => {
-    switch (status) {
-        case 'Pendiente': return 'bg-slate-700 text-slate-300';
-        case 'En Progreso': return 'bg-sky-500/20 text-sky-400';
-        case 'Completada': return 'bg-emerald-500/20 text-emerald-400';
-        case 'Retrasada': return 'bg-rose-500/20 text-rose-400';
-        default: return 'bg-slate-700 text-slate-300';
-    }
-};
-
-interface OutletContextType {
-    productionOrders: ProductionOrder[];
-    setProductionOrders: React.Dispatch<React.SetStateAction<ProductionOrder[]>>;
-    inventoryData: MaterialInventory[];
-    addPurchaseSuggestions: (suggestions: Omit<PurchaseSuggestion, 'id'>[]) => void;
-    productModels: ProductModel[];
-}
-
-interface MaterialDeficit {
-    name: string;
-    missingAmount: number;
-    unit: string;
-}
+import React, { useState, useEffect } from 'react';
+import { Plus, Play, Pause, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import { ProductModel, ProductionOrder, MaterialInventory, ProductionOrderStatus } from '../types';
+import CreateProductionOrderModal from './CreateProductionOrderModal';
 
 const Planificacion: React.FC = () => {
-    const { productionOrders, setProductionOrders, inventoryData, addPurchaseSuggestions, productModels } = useOutletContext<OutletContextType>();
+    const [productModels, setProductModels] = useState<ProductModel[]>([]);
+    const [inventoryData, setInventoryData] = useState<MaterialInventory[]>([]);
+    const [productionOrders, setProductionOrders] = useState<ProductionOrder[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingOrder, setEditingOrder] = useState<ProductionOrder | null>(null);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [statusFilter, setStatusFilter] = useState('');
+    const [selectedModel, setSelectedModel] = useState<ProductModel | null>(null);
+    const [loading, setLoading] = useState(true);
 
-    const inventoryMap: Map<string, MaterialInventory> = useMemo(() => new Map(inventoryData.map(item => [item.id, item])), [inventoryData]);
+    useEffect(() => {
+        loadData();
+    }, []);
 
-    const checkMaterialAvailability = (order: ProductionOrder): { available: boolean; deficit: MaterialDeficit[] } => {
-        const missingMaterials: MaterialDeficit[] = [];
-        for (const material of order.materials) {
-            const stock = inventoryMap.get(material.sku)?.quantity ?? 0;
-            if (stock < material.required) {
-                missingMaterials.push({
-                    name: material.name,
-                    missingAmount: material.required - stock,
-                    unit: material.unit,
-                });
+    const loadData = () => {
+        try {
+            // Cargar modelos de producto
+            const modelsData = localStorage.getItem('sismac_productModels');
+            if (modelsData) {
+                const models = JSON.parse(modelsData);
+                setProductModels(models);
             }
-        }
-        return { available: missingMaterials.length === 0, deficit: missingMaterials };
-    };
 
-    const handleGenerateSuggestions = (order: ProductionOrder) => {
-        const newSuggestions: Omit<PurchaseSuggestion, 'id'>[] = [];
-        for (const material of order.materials) {
-            const stock = inventoryMap.get(material.sku)?.quantity ?? 0;
-            if (stock < material.required) {
-                // Simulación de IA para elegir proveedor
-                const recommendedSupplier = supplierData.sort((a,b) => b.otd - a.otd)[0]?.name || 'Proveedor Genérico';
-                
-                newSuggestions.push({
-                    materialId: material.sku,
-                    materialName: material.name,
-                    quantityNeeded: material.required - stock,
-                    unit: material.unit,
-                    recommendedSupplier: recommendedSupplier,
-                    sourceProductionOrderId: order.id,
-                });
+            // Cargar datos de inventario
+            const inventoryData = localStorage.getItem('sismac_inventoryData');
+            if (inventoryData) {
+                const inventory = JSON.parse(inventoryData);
+                setInventoryData(inventory);
             }
-        }
-        if (newSuggestions.length > 0) {
-            addPurchaseSuggestions(newSuggestions);
-            // Marcar la orden para que no se puedan generar más sugerencias
-            setProductionOrders(prev => prev.map(o => o.id === order.id ? { ...o, suggestionStatus: 'generated' } : o));
+
+            // Cargar órdenes de producción existentes
+            const ordersData = localStorage.getItem('sismac_productionOrders');
+            if (ordersData) {
+                const orders = JSON.parse(ordersData);
+                setProductionOrders(orders);
+            }
+        } catch (error) {
+            console.error('Error loading data:', error);
+        } finally {
+            setLoading(false);
         }
     };
 
-    const handleOpenAddModal = () => {
-        setEditingOrder(null);
+    const getStatusIcon = (status: ProductionOrderStatus) => {
+        switch (status) {
+            case 'Pendiente':
+                return <Pause className="w-4 h-4 text-yellow-500" />;
+            case 'En Progreso':
+                return <Play className="w-4 h-4 text-blue-500" />;
+            case 'Completada':
+                return <CheckCircle className="w-4 h-4 text-green-500" />;
+            case 'Retrasada':
+                return <XCircle className="w-4 h-4 text-red-500" />;
+            default:
+                return <AlertTriangle className="w-4 h-4 text-gray-500" />;
+        }
+    };
+
+    const getStatusColor = (status: ProductionOrderStatus) => {
+        switch (status) {
+            case 'Pendiente':
+                return 'bg-yellow-100 text-yellow-800';
+            case 'En Progreso':
+                return 'bg-blue-100 text-blue-800';
+            case 'Completada':
+                return 'bg-green-100 text-green-800';
+            case 'Retrasada':
+                return 'bg-red-100 text-red-800';
+            default:
+                return 'bg-gray-100 text-gray-800';
+        }
+    };
+
+    const handleCreateOrder = (model: ProductModel) => {
+        setSelectedModel(model);
         setIsModalOpen(true);
     };
 
-    const handleOpenEditModal = (order: ProductionOrder) => {
-        setEditingOrder(order);
-        setIsModalOpen(true);
-    };
-
-    const handleCloseModal = () => {
+    const handleSaveOrder = (order: ProductionOrder) => {
+        const updatedOrders = [...productionOrders, order];
+        setProductionOrders(updatedOrders);
+        localStorage.setItem('sismac_productionOrders', JSON.stringify(updatedOrders));
         setIsModalOpen(false);
-        setEditingOrder(null);
+        setSelectedModel(null);
     };
 
-    const handleSaveOrder = (orderToSave: Omit<ProductionOrder, 'id'> & { id?: string }) => {
-        // Check if an order with this ID already exists to determine if it's an edit or a new add.
-        if (orderToSave.id && productionOrders.some(o => o.id === orderToSave.id)) { // Editing
-            setProductionOrders(prev => prev.map(o => o.id === orderToSave.id ? orderToSave as ProductionOrder : o));
-        } else { // Adding a new order (which now has a pre-generated ID from the modal)
-            const newOrder: ProductionOrder = orderToSave as ProductionOrder;
-            setProductionOrders(prev => [newOrder, ...prev]);
-        }
-        handleCloseModal();
+    const formatCurrency = (amount: number) => {
+        return new Intl.NumberFormat('es-CO', {
+            style: 'currency',
+            currency: 'COP',
+            minimumFractionDigits: 2
+        }).format(amount);
     };
 
-     const filteredOrders = useMemo(() => {
-        return productionOrders.filter(order => {
-            const matchesStatus = statusFilter ? order.status === statusFilter : true;
-            const matchesSearch = searchTerm ?
-                order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                order.productModel.toLowerCase().includes(searchTerm.toLowerCase())
-                : true;
-            return matchesStatus && matchesSearch;
-        });
-    }, [productionOrders, searchTerm, statusFilter]);
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-600"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
-            <ProductionOrderModal
-                isOpen={isModalOpen}
-                onClose={handleCloseModal}
-                onSave={handleSaveOrder}
-                existingOrder={editingOrder}
-                productModels={productModels}
-                inventoryData={inventoryData}
-                addPurchaseSuggestions={addPurchaseSuggestions}
-            />
-
-            <div className="flex justify-between items-center">
-                <h3 className="text-xl font-semibold text-white">Plan de Producción</h3>
-                 <button
-                    onClick={handleOpenAddModal}
-                    className="flex items-center gap-2 px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-500 transition-colors text-sm font-semibold shadow-lg shadow-sky-900/50"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
-                    Crear Orden de Producción
-                </button>
-            </div>
-
-            <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700 flex items-center gap-4">
-                 <div className="relative flex-grow">
-                    <input type="text" placeholder="Buscar por ID o modelo..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="bg-slate-700 border border-slate-600 text-slate-200 text-sm rounded-lg focus:ring-sky-500 focus:border-sky-500 block w-full pl-10 p-2.5" />
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none"><svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg></div>
-                </div>
-                 <div>
-                    <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="bg-slate-700 border border-slate-600 text-slate-200 text-sm rounded-lg focus:ring-sky-500 focus:border-sky-500 block w-full p-2.5">
-                        <option value="">Todos los Estados</option>
-                        {allStatuses.map(s => <option key={s} value={s}>{s}</option>)}
-                    </select>
+            {/* Header */}
+            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 border border-gray-200 dark:border-slate-600">
+                <div className="flex justify-between items-center">
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Planificación de Producción</h1>
+                        <p className="text-gray-600 dark:text-slate-300 mt-1">
+                            Gestiona órdenes de producción basadas en modelos de producto cargados
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <div className="text-right">
+                            <p className="text-sm text-gray-600 dark:text-slate-300">Modelos Disponibles</p>
+                            <p className="text-2xl font-bold text-sky-600">{productModels.length}</p>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-sm text-gray-600 dark:text-slate-300">Órdenes Activas</p>
+                            <p className="text-2xl font-bold text-blue-600">
+                                {productionOrders.filter(order =>
+                                    order.status === 'Pendiente' || order.status === 'En Progreso'
+                                ).length}
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div className="bg-slate-800/50 p-6 rounded-xl border border-slate-700">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-left text-slate-400">
-                        <thead className="text-xs text-slate-300 uppercase bg-slate-700/50">
-                            <tr>
-                                <th scope="col" className="px-6 py-3">ID Orden</th>
-                                <th scope="col" className="px-6 py-3">Modelo Producto</th>
-                                <th scope="col" className="px-6 py-3">Fecha Requerida</th>
-                                <th scope="col" className="px-6 py-3 text-center">Disponibilidad Material</th>
-                                <th scope="col" className="px-6 py-3 text-center">Estado</th>
-                                <th scope="col" className="px-6 py-3 text-center">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filteredOrders.map((order) => {
-                                const availability = checkMaterialAvailability(order);
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Modelos Disponibles */}
+                <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-600">
+                    <div className="p-6 border-b border-gray-200 dark:border-slate-700">
+                        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Modelos de Producto</h2>
+                        <p className="text-sm text-gray-600 dark:text-slate-300 mt-1">
+                            Selecciona un modelo para crear una orden de producción
+                        </p>
+                    </div>
+                    <div className="p-6 space-y-4 max-h-96 overflow-y-auto">
+                        {productModels.length === 0 ? (
+                            <div className="text-center py-8 text-gray-500 dark:text-slate-400">
+                                <p>No hay modelos de producto cargados</p>
+                                <p className="text-sm mt-2 text-gray-600 dark:text-slate-300">Ve a Ingeniería para cargar modelos</p>
+                            </div>
+                        ) : (
+                            productModels.map((model) => {
+                                const totalCost = model.bom.reduce((sum, item) => {
+                                    const material = inventoryData.find(inv => inv.id === item.materialSku);
+                                    return sum + (material ? material.unitCost * item.quantityPerUnit : 0);
+                                }, 0);
+
                                 return (
-                                <tr key={order.id} className="border-b border-slate-700 hover:bg-slate-800">
-                                    <td className="px-6 py-4 font-mono">{order.id}</td>
-                                    <td className="px-6 py-4 font-medium text-slate-200">
-                                        <div>{order.productModel}</div>
-                                        <div className="text-xs text-slate-500 mt-1">{order.quantity.toLocaleString('es-MX')} pares</div>
-                                    </td>
-                                    <td className="px-6 py-4">{new Date(order.requiredDate + 'T00:00:00').toLocaleDateString('es-MX')}</td>
-                                    <td className="px-6 py-4 text-center">
-                                        {availability.available ? (
-                                            <span className="flex items-center justify-center gap-2 text-emerald-400">
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
-                                                Disponible
-                                            </span>
-                                        ) : (
-                                            <div className="relative group flex items-center justify-center gap-2 text-amber-400">
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 3.001-1.742 3.001H4.42c-1.53 0-2.493-1.667-1.743-3.001l5.58-9.92zM10 13a1 1 0 110-2 1 1 0 010 2zm-1-8a1 1 0 00-1 1v3a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
-                                                <span>Déficit</span>
-                                                <div className="absolute bottom-full mb-2 w-max max-w-sm p-3 bg-slate-900 text-slate-200 text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 border border-slate-700">
-                                                    <p className="font-bold mb-2 text-left text-white">Materiales Faltantes:</p>
-                                                    <ul className="list-disc list-inside text-left space-y-1">
-                                                        {availability.deficit.map(item => (
-                                                            <li key={item.name}>
-                                                                <span className="font-semibold text-slate-100">{item.name}:</span> Faltan <span className="font-bold text-amber-300">{item.missingAmount.toLocaleString()} {item.unit}</span>
-                                                            </li>
-                                                        ))}
-                                                    </ul>
+                                    <div
+                                        key={model.id}
+                                        className="border border-gray-200 dark:border-slate-600 rounded-lg p-4 hover:border-sky-300 dark:hover:border-sky-600 transition-colors cursor-pointer"
+                                        onClick={() => handleCreateOrder(model)}
+                                    >
+                                        <div className="flex justify-between items-start">
+                                            <div className="flex-1">
+                                                <h3 className="font-semibold text-gray-900 dark:text-white">{model.name}</h3>
+                                                <p className="text-sm text-gray-600 dark:text-slate-300">ID: {model.id}</p>
+                                                <div className="mt-2 flex items-center gap-4 text-sm text-gray-500 dark:text-slate-400">
+                                                    <span>{model.bom.length} materiales</span>
+                                                    <span>{formatCurrency(totalCost)} por par</span>
+                                                    {model.category && <span className="bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded text-xs text-gray-700 dark:text-slate-300">{model.category}</span>}
                                                 </div>
                                             </div>
-                                        )}
-                                    </td>
-                                    <td className="px-6 py-4 text-center">
-                                        <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getStatusClass(order.status)}`}>
-                                            {order.status}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-center space-x-2">
-                                        {!availability.available && order.suggestionStatus !== 'generated' ? (
-                                            <button 
-                                                onClick={() => handleGenerateSuggestions(order)}
-                                                className="px-2 py-1 bg-indigo-600 text-white rounded-md hover:bg-indigo-500 transition-colors text-xs font-semibold inline-flex items-center justify-center min-w-36"
-                                            >
-                                                Generar Sugerencias
-                                            </button>
-                                        ) : order.suggestionStatus === 'generated' ? (
-                                            <span className="px-2 py-1 text-xs text-slate-500 inline-flex items-center justify-center min-w-36">
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5 text-emerald-500" viewBox="0 0 20 20" fill="currentColor">
-                                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                                </svg>
-                                                Sugerencias Creadas
-                                            </span>
-                                        ) : (
-                                            <div className="min-w-36"></div> // Placeholder for alignment
-                                        )}
-                                        <button onClick={() => handleOpenEditModal(order)} className="p-1 rounded-md text-amber-400 hover:bg-amber-500/20 transition-colors inline-flex align-middle">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fillRule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clipRule="evenodd" /></svg>
-                                        </button>
-                                    </td>
-                                </tr>
-                                )
-                            })}
-                        </tbody>
-                    </table>
-                     {filteredOrders.length === 0 && (
-                        <div className="text-center py-8 text-slate-500">
-                            No se encontraron órdenes de producción que coincidan con los filtros.
-                        </div>
-                    )}
+                                            <div className="ml-4">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleCreateOrder(model);
+                                                    }}
+                                                    className="bg-sky-600 text-white px-4 py-2 rounded-lg hover:bg-sky-500 transition-colors flex items-center gap-2"
+                                                >
+                                                    <Plus className="w-4 h-4" />
+                                                    Crear Orden
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        )}
+                    </div>
+                </div>
+
+                {/* Órdenes de Producción */}
+                <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-600">
+                    <div className="p-6 border-b border-gray-200 dark:border-slate-700">
+                        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Órdenes de Producción</h2>
+                        <p className="text-sm text-gray-600 dark:text-slate-300 mt-1">
+                            Órdenes activas y su estado actual
+                        </p>
+                    </div>
+                    <div className="p-6 space-y-4 max-h-96 overflow-y-auto">
+                        {productionOrders.length === 0 ? (
+                            <div className="text-center py-8 text-gray-500 dark:text-slate-400">
+                                <p>No hay órdenes de producción</p>
+                                <p className="text-sm mt-2 text-gray-600 dark:text-slate-300">Crea tu primera orden desde los modelos disponibles</p>
+                            </div>
+                        ) : (
+                            productionOrders.map((order) => (
+                                <div key={order.id} className="border border-gray-200 dark:border-slate-600 rounded-lg p-4">
+                                    <div className="flex justify-between items-start">
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-3">
+                                                {getStatusIcon(order.status as ProductionOrderStatus)}
+                                                <div>
+                                                    <h3 className="font-semibold text-gray-900 dark:text-white">{order.productModel}</h3>
+                                                    <p className="text-sm text-gray-600 dark:text-slate-300">ID: {order.id}</p>
+                                                </div>
+                                            </div>
+                                            <div className="mt-2 flex items-center gap-4 text-sm text-gray-500 dark:text-slate-400">
+                                                <span>{order.quantity} pares</span>
+                                                <span>{formatCurrency(order.suggestionStatus === 'generated' ? 0 : 0)}</span>
+                                                <span className={`px-2 py-1 rounded text-xs ${getStatusColor(order.status as ProductionOrderStatus)}`}>
+                                                    {order.status}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
                 </div>
             </div>
+
+            {/* Modal para crear orden de producción */}
+            {selectedModel && (
+                <CreateProductionOrderModal
+                    isOpen={isModalOpen}
+                    onClose={() => {
+                        setIsModalOpen(false);
+                        setSelectedModel(null);
+                    }}
+                    onSave={handleSaveOrder}
+                    productModel={selectedModel}
+                    inventoryData={inventoryData}
+                    existingOrderIds={productionOrders.map(order => order.id)}
+                />
+            )}
         </div>
     );
 };

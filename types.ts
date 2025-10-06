@@ -130,10 +130,16 @@ export type ProductionOrderStatus = 'Pendiente' | 'En Progreso' | 'Completada' |
 export interface ProductModel {
     id: string;
     name: string;
+    description?: string;
+    category?: string;
+    targetCost?: number;
+    notes?: string;
     bom: {
         materialSku: string;
         quantityPerUnit: number; // e.g., 0.3 m² per pair, 2 pzas per pair
     }[];
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 export interface ProductionOrder {

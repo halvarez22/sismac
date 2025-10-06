@@ -57,10 +57,13 @@ export const Copilot: React.FC<CopilotProps> = ({ isOpen, onClose, appData }) =>
 
             if (!ai) {
                 const examplePrompts = `Aquí tienes algunas ideas de lo que puedes preguntar:
+- "¿Cuál es el costo total por par del modelo VAZZA ESTILO 13501 BLANCO?"
+- "¿Cuántos materiales tiene el modelo 13501 BLANCO?"
+- "¿Cuál es el material más caro del modelo 13501?"
+- "¿Cuánto cuesta producir 100 pares del estilo 13501 BLANCO?"
 - "¿Cuál es el valor total del inventario?"
 - "¿Qué órdenes de producción están pendientes?"
-- "Muéstrame los materiales con stock crítico."
-- "¿Quién es nuestro proveedor con el mejor OTD?"`;
+- "Muéstrame los materiales con stock crítico."`;
 
                 if (!import.meta.env.VITE_GROQ_API_KEY) {
                     setError("Modo Demo: La API Key de Groq no está configurada.");
@@ -71,7 +74,7 @@ export const Copilot: React.FC<CopilotProps> = ({ isOpen, onClose, appData }) =>
                 try {
                     const groqAI = new Groq({ apiKey: import.meta.env.VITE_GROQ_API_KEY as string, dangerouslyAllowBrowser: true });
                     setAi(groqAI);
-                    const initialMessage = `¡Hola! Soy SISMAC Copilot. Puedo ayudarte a analizar los datos de la aplicación.\n\n${examplePrompts}\n\n¿En qué puedo ayudarte?`;
+                    const initialMessage = `¡Hola! Soy SISMAC Copilot. Puedo ayudarte a analizar los datos de la aplicación, incluyendo los modelos de producto con su BOM completo.\n\n${examplePrompts}\n\n¿En qué puedo ayudarte?`;
                     setChatHistory([{ role: 'model', text: initialMessage }]);
                 } catch (e) {
                     console.error("Error initializing Groq:", e);
@@ -82,37 +85,103 @@ export const Copilot: React.FC<CopilotProps> = ({ isOpen, onClose, appData }) =>
     }, [isOpen, ai]);
     
     const buildFullPrompt = (userMessage: string): string => {
+        // Debug: Verificar qué datos están disponibles
+        console.log('🔍 DEBUG Copilot - Datos recibidos:');
+        console.log('📦 Product Models:', appData.productModels ? appData.productModels.length : 'undefined');
+        console.log('📦 Inventory Data:', appData.inventoryData ? appData.inventoryData.length : 'undefined');
+        console.log('📦 Production Orders:', appData.productionOrders ? appData.productionOrders.length : 'undefined');
+        console.log('📦 Purchase Orders:', appData.purchaseOrders ? appData.purchaseOrders.length : 'undefined');
+
+        if (appData.productModels && appData.productModels.length > 0) {
+            console.log('📋 Modelos disponibles:');
+            appData.productModels.forEach(model => {
+                console.log(`   - ${model.name}: ${model.bom ? model.bom.length : 0} materiales`);
+            });
+        }
+
         // Simplificar los datos para evitar prompts demasiado largos
         const summaryData = {
-            inventory: appData.inventoryData.map(item => ({
+            inventory: (appData.inventoryData || []).map(item => ({
                 id: item.id,
                 name: item.name,
                 status: item.status,
                 quantity: item.quantity,
-                unit: item.unit
+                unit: item.unit,
+                category: item.category,
+                unitCost: item.unitCost,
+                totalValue: item.totalValue,
+                reorderPoint: item.reorderPoint
             })),
-            productionOrders: appData.productionOrders.map(order => ({
+            productionOrders: (appData.productionOrders || []).map(order => ({
                 id: order.id,
                 status: order.status,
-                quantity: order.quantity
-            })),
-            purchaseOrders: appData.purchaseOrders.map(order => ({
-                id: order.id,
-                status: order.status,
+                quantity: order.quantity,
+                modelId: order.modelId,
                 totalCost: order.totalCost
+            })),
+            purchaseOrders: (appData.purchaseOrders || []).map(order => ({
+                id: order.id,
+                status: order.status,
+                totalCost: order.totalCost,
+                supplier: order.supplier,
+                materials: (order.materials || []).map(m => ({ sku: m.materialSku, quantity: m.quantity }))
+            })),
+            productModels: (appData.productModels || []).map(model => ({
+                id: model.id,
+                name: model.name,
+                bom: (model.bom || []).map(bomItem => ({
+                    materialSku: bomItem.materialSku,
+                    quantityPerUnit: bomItem.quantityPerUnit
+                }))
             }))
         };
 
-        return `Eres SISMAC Copilot, un asistente de IA para gestión de inventario y producción.
+        // Crear información detallada de modelos con materiales específicos
+        const detailedModelsInfo = summaryData.productModels.map(model => {
+            const modelInventory = model.bom.map(bomItem => {
+                const material = summaryData.inventory.find(inv => inv.id === bomItem.materialSku);
+                if (material) {
+                    const totalCost = material.unitCost * bomItem.quantityPerUnit;
+                    return `- ${material.name}: ${bomItem.quantityPerUnit} ${material.unit} × $${material.unitCost.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} = $${totalCost.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                }
+                return `- ${bomItem.materialSku}: ${bomItem.quantityPerUnit} unidades (material no encontrado)`;
+            }).join('\n');
 
-Datos disponibles:
-- Inventario: ${summaryData.inventory.length} materiales
-- Órdenes de producción: ${summaryData.productionOrders.length}
-- Órdenes de compra: ${summaryData.purchaseOrders.length}
+            const totalModelCost = model.bom.reduce((total, bomItem) => {
+                const material = summaryData.inventory.find(inv => inv.id === bomItem.materialSku);
+                return total + (material ? material.unitCost * bomItem.quantityPerUnit : 0);
+            }, 0);
 
-Pregunta: "${userMessage}"
+            return `### ${model.name} (${model.id})
+**Materiales en BOM (${model.bom.length}):**
+${modelInventory}
 
-Responde de manera concisa en español basándote solo en estos datos.`;
+**Costo total por par: $${totalModelCost.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}**`;
+        }).join('\n\n');
+
+        return `Eres SISMAC Copilot, un asistente de IA experto en gestión de inventario y producción para una fábrica de calzado.
+
+DATOS ESPECÍFICOS DISPONIBLES:
+
+MODELOS DE PRODUCTO DETALLADOS:
+${detailedModelsInfo}
+
+INVENTARIO DISPONIBLE (${summaryData.inventory.length} materiales):
+${summaryData.inventory.map(item =>
+  `- ${item.name} (${item.id}): $${item.unitCost.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} por ${item.unit}, Stock: ${item.quantity.toLocaleString('es-CO')} ${item.unit}, Categoría: ${item.category}`
+).join('\n')}
+
+Pregunta del usuario: "${userMessage}"
+
+INSTRUCCIONES ESPECÍFICAS:
+- Responde ÚNICAMENTE en español y de manera clara y precisa
+- SIEMPRE usa los datos específicos del modelo VAZZA ESTILO 13501 BLANCO cuando se pregunte sobre él
+- Los materiales correctos del modelo son: PUNTERA ROBIN SPORT, SUELA PRINCESA/MANGO/VEGAN T.R. BLANCA, AGUJETA PLANA CREES #120 CM, TRANSFER PLANTILLA VAZZA ORO, BULLON - ESPONJA 10 MM / 50 KG
+- Formatea TODOS los números con comas para miles (ej: 1.234,56) y símbolo $ para pesos
+- Calcula costos correctamente multiplicando cantidad por unidad × costo unitario
+- Para preguntas sobre producción, incluye el cálculo detallado de cada material
+- Si la pregunta es sobre costos, muestra el desglose completo material por material
+- Si necesitas más detalles o la pregunta no es clara, pide aclaración al usuario`;
     };
 
     const handleSendMessage = async (e: React.FormEvent) => {
@@ -128,7 +197,54 @@ Responde de manera concisa en español basándote solo en estos datos.`;
         // Handle Demo Mode
         if (error) {
              setTimeout(() => {
-                setChatHistory(prev => [...prev, { role: 'model', text: "Esta es una respuesta de demostración. En un entorno real, analizaría los datos para informarte que el proveedor con mejor OTD (On-Time Delivery) es 'Pieles del Bajío S.A.' con un 98%." }]);
+                const userMessage = inputValue.trim();
+                let demoResponse = "Esta es una respuesta de demostración.";
+
+                if (userMessage.toLowerCase().includes('13501') || userMessage.toLowerCase().includes('vazza')) {
+                    demoResponse = `Basándome en los datos del modelo VAZZA ESTILO 13501 BLANCO:
+
+📋 **BOM (Lista de Materiales):**
+- PUNTERA ROBIN SPORT: 2,35 MT × $60,00 = $141,00
+- SUELA PRINCESA/MANGO/VEGAN T.R. BLANCA: 1 PRS × $26,00 = $26,00
+- AGUJETA PLANA CREES #120 CM: 1 GRUESAS × $203,52 = $203,52
+- TRANSFER PLANTILLA VAZZA ORO: 2 PZAS × $0,30 = $0,60
+- BULLON - ESPONJA 10 MM / 50 KG: 1 KG × $1,20 = $1,20
+
+💰 **Costo total por par: $372,32**
+
+Si necesitas más detalles sobre este modelo o cálculos específicos, ¡házmelo saber!`;
+                } else if (userMessage.toLowerCase().includes('costo') || userMessage.toLowerCase().includes('cost') || userMessage.toLowerCase().includes('cuesta')) {
+                    if (userMessage.toLowerCase().includes('100')) {
+                        demoResponse = `Para calcular el costo de producción de 100 pares del modelo VAZZA ESTILO 13501 BLANCO:
+
+**Desglose detallado:**
+
+- PUNTERA ROBIN SPORT: 2,35 × 100 = 235 MT × $60,00 = $14.100,00
+- SUELA PRINCESA/MANGO/VEGAN T.R. BLANCA: 1 × 100 = 100 PRS × $26,00 = $2.600,00
+- AGUJETA PLANA CREES #120 CM: 1 × 100 = 100 GRUESAS × $203,52 = $20.352,00
+- TRANSFER PLANTILLA VAZZA ORO: 2 × 100 = 200 PZAS × $0,30 = $60,00
+- BULLON - ESPONJA 10 MM / 50 KG: 1 × 100 = 100 KG × $1,20 = $120,00
+
+💰 **Costo total para 100 pares: $37.232,00**
+
+**Costo por par: $372,32**`;
+                    } else {
+                        demoResponse = `El costo total por par del modelo VAZZA ESTILO 13501 BLANCO es **$372,32**.
+
+**Desglose del cálculo:**
+- PUNTERA ROBIN SPORT: 2,35 MT × $60,00 = $141,00
+- SUELA PRINCESA/MANGO/VEGAN T.R. BLANCA: 1 PRS × $26,00 = $26,00
+- AGUJETA PLANA CREES #120 CM: 1 GRUESAS × $203,52 = $203,52
+- TRANSFER PLANTILLA VAZZA ORO: 2 PZAS × $0,30 = $0,60
+- BULLON - ESPONJA 10 MM / 50 KG: 1 KG × $1,20 = $1,20
+
+**Total por par: $372,32**`;
+                    }
+                } else {
+                    demoResponse = "Esta es una respuesta de demostración. En un entorno real, analizaría los datos del inventario y modelos de producto para darte información precisa con formato correcto.";
+                }
+
+                setChatHistory(prev => [...prev, { role: 'model', text: demoResponse }]);
                 setIsLoading(false);
             }, 1500);
             return;

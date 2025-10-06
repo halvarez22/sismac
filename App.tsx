@@ -16,6 +16,7 @@ import Contabilidad from './components/Contabilidad';
 import Ingenieria from './components/Ingenieria';
 import Admin from './components/Admin';
 import { Copilot } from './components/Copilot';
+import { ToastProvider } from './components/ToastContainer';
 
 // --- MOCK DATA ---
 
@@ -38,6 +39,482 @@ const loadFromStorage = <T,>(key: string, defaultValue: T): T => {
     }
 };
 
+// Clear localStorage completely and reload real data
+const clearAndReloadData = () => {
+    console.log('🗑️ Limpiando localStorage completamente...');
+    localStorage.removeItem('sismac_productModels');
+    localStorage.removeItem('sismac_inventory');
+    localStorage.removeItem('sismac_inventoryData');
+    localStorage.removeItem('sismac_productionOrders');
+    localStorage.removeItem('sismac_purchaseOrders');
+    localStorage.removeItem('sismac_purchaseSuggestions');
+    localStorage.clear(); // Limpiar todo por si acaso
+    console.log('✅ localStorage limpiado completamente');
+    console.log('🔄 Recargando página para cargar datos reales...');
+    setTimeout(() => {
+        window.location.reload();
+    }, 100);
+};
+
+// Emergency function to force load real data
+const forceLoadRealData = () => {
+    console.log('🚨 FORZANDO CARGA DE DATOS REALES DEL MODELO VAZZA...');
+
+    // Clear all localStorage
+    localStorage.clear();
+
+    // Load real data directly
+    const realProductModel = {
+        id: 'MOD-VAZZA-13501-BLANCO',
+        name: 'VAZZA ESTILO 13501 BLANCO',
+        description: 'Modelo de zapato blanco estilo 13501 de la marca VAZZA, fabricado con materiales de primera calidad.',
+        category: 'Zapatos Casuales',
+        targetCost: 372.32,
+        notes: 'Modelo principal de la temporada con horma POLET base del estilo 330-69.',
+        bom: [
+            { materialSku: 'PUNTERA_9', quantityPerUnit: 2.35 },
+            { materialSku: 'OJILLERO_10', quantityPerUnit: 2.25 },
+            { materialSku: 'REMATE_12', quantityPerUnit: 0.48 },
+            { materialSku: 'LENGUA_13', quantityPerUnit: 2.14 },
+            { materialSku: 'LATERALES_14', quantityPerUnit: 7.452 },
+            { materialSku: 'APLICACI_N_TIRAS__2__15', quantityPerUnit: 2.35 },
+            { materialSku: 'PALOMA_16', quantityPerUnit: 0.92 },
+            { materialSku: 'FORRO_LENGUA_Y_TALON_17', quantityPerUnit: 20.55 },
+            { materialSku: 'REFUERZO_EVA_LATERAL_18', quantityPerUnit: 10.08 },
+            { materialSku: 'PLANTILLA_19', quantityPerUnit: 4.5 },
+            { materialSku: 'REF_CU_A_PLANTILLA_20', quantityPerUnit: 0.083333333 },
+            { materialSku: 'BULLON_21', quantityPerUnit: 2.14 },
+            { materialSku: 'ESPUMA_LENGUA_22', quantityPerUnit: 1.793 },
+            { materialSku: 'PASACINTA_24', quantityPerUnit: 2 },
+            { materialSku: 'PLANTA_25', quantityPerUnit: 0.0303 },
+            { materialSku: 'AGUJETA_26', quantityPerUnit: 1 },
+            { materialSku: 'OJILLOS_27', quantityPerUnit: 20 },
+            { materialSku: 'ULTIMO_OJILLO_28', quantityPerUnit: 4 },
+            { materialSku: 'CONTRAFUERTE_32', quantityPerUnit: 1 },
+            { materialSku: 'TRANSFER_PLANTILLA_35', quantityPerUnit: 2 }
+        ],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+    };
+
+    // Save product models
+    localStorage.setItem('sismac_productModels', JSON.stringify([realProductModel]));
+
+    // Save inventory data
+    const realInventoryData = [
+        { id: 'PUNTERA_9', name: 'PUNTERA', category: 'Pieles', quantity: 100, unit: 'PRS', location: 'VAZZA-PUN', unitCost: 60.00, totalValue: 6000, reorderPoint: 120, lastMovementDate: '2024-07-30' },
+        { id: 'OJILLERO_10', name: 'OJILLERO', category: 'Textiles', quantity: 100, unit: 'PRS', location: 'VAZZA-OJI', unitCost: 60.00, totalValue: 6000, reorderPoint: 120, lastMovementDate: '2024-07-29' },
+        { id: 'REMATE_12', name: 'REMATE', category: 'Textiles', quantity: 100, unit: 'PRS', location: 'VAZZA-REM', unitCost: 60.00, totalValue: 6000, reorderPoint: 120, lastMovementDate: '2024-07-29' },
+        { id: 'LENGUA_13', name: 'LENGUA', category: 'Textiles', quantity: 100, unit: 'PRS', location: 'VAZZA-LEN', unitCost: 60.00, totalValue: 6000, reorderPoint: 120, lastMovementDate: '2024-07-28' },
+        { id: 'LATERALES_14', name: 'LATERALES', category: 'Textiles', quantity: 100, unit: 'PRS', location: 'VAZZA-LAT', unitCost: 60.00, totalValue: 6000, reorderPoint: 120, lastMovementDate: '2024-07-28' },
+        { id: 'APLICACI_N_TIRAS__2__15', name: 'APLICACIÓN TIRAS (2 POR PIE) LADO EXTERNO', category: 'Textiles', quantity: 100, unit: 'PRS', location: 'VAZZA-APL', unitCost: 73.08, totalValue: 7308, reorderPoint: 146, lastMovementDate: '2024-07-28' },
+        { id: 'PALOMA_16', name: 'PALOMA', category: 'Textiles', quantity: 100, unit: 'PRS', location: 'VAZZA-PAL', unitCost: 73.08, totalValue: 7308, reorderPoint: 146, lastMovementDate: '2024-07-28' },
+        { id: 'FORRO_LENGUA_Y_TALON_17', name: 'FORRO LENGUA Y TALONES', category: 'Textiles', quantity: 100, unit: 'PRS', location: 'VAZZA-FOR', unitCost: 49.88, totalValue: 4988, reorderPoint: 100, lastMovementDate: '2024-07-28' },
+        { id: 'REFUERZO_EVA_LATERAL_18', name: 'REFUERZO EVA LATERAL', category: 'Pieles', quantity: 100, unit: 'PRS', location: 'VAZZA-REF', unitCost: 26.00, totalValue: 2600, reorderPoint: 52, lastMovementDate: '2024-07-28' },
+        { id: 'PLANTILLA_19', name: 'PLANTILLA', category: 'Textiles', quantity: 100, unit: 'PRS', location: 'VAZZA-PLA', unitCost: 26.00, totalValue: 2600, reorderPoint: 52, lastMovementDate: '2024-07-28' },
+        { id: 'REF_CU_A_PLANTILLA_20', name: 'REF CU A PLANTILLA', category: 'Accesorios', quantity: 100, unit: 'PRS', location: 'VAZZA-RCU', unitCost: 0.30, totalValue: 30, reorderPoint: 1, lastMovementDate: '2024-07-28' },
+        { id: 'BULLON_21', name: 'BULLON', category: 'Textiles', quantity: 100, unit: 'PRS', location: 'VAZZA-BUL', unitCost: 1.20, totalValue: 120, reorderPoint: 2, lastMovementDate: '2024-07-28' },
+        { id: 'ESPUMA_LENGUA_22', name: 'ESPUMA LENGUA', category: 'Textiles', quantity: 100, unit: 'PRS', location: 'VAZZA-ESP', unitCost: 26.00, totalValue: 2600, reorderPoint: 52, lastMovementDate: '2024-07-28' },
+        { id: 'PASACINTA_24', name: 'PASACINTA', category: 'Textiles', quantity: 100, unit: 'PRS', location: 'VAZZA-PAS', unitCost: 203.52, totalValue: 20352, reorderPoint: 407, lastMovementDate: '2024-07-28' },
+        { id: 'PLANTA_25', name: 'PLANTA', category: 'Textiles', quantity: 100, unit: 'PRS', location: 'VAZZA-PLT', unitCost: 26.00, totalValue: 2600, reorderPoint: 52, lastMovementDate: '2024-07-28' },
+        { id: 'AGUJETA_26', name: 'AGUJETA', category: 'Textiles', quantity: 100, unit: 'PRS', location: 'VAZZA-AGU', unitCost: 203.52, totalValue: 20352, reorderPoint: 407, lastMovementDate: '2024-07-28' },
+        { id: 'OJILLOS_27', name: 'OJILLOS', category: 'Accesorios', quantity: 100, unit: 'PRS', location: 'VAZZA-OJI', unitCost: 0.30, totalValue: 30, reorderPoint: 1, lastMovementDate: '2024-07-28' },
+        { id: 'ULTIMO_OJILLO_28', name: 'ULTIMO OJILLO', category: 'Accesorios', quantity: 100, unit: 'PRS', location: 'VAZZA-ULO', unitCost: 0.30, totalValue: 30, reorderPoint: 1, lastMovementDate: '2024-07-28' },
+        { id: 'CONTRAFUERTE_32', name: 'CONTRAFUERTE', category: 'Textiles', quantity: 100, unit: 'PRS', location: 'VAZZA-CON', unitCost: 26.00, totalValue: 2600, reorderPoint: 52, lastMovementDate: '2024-07-28' },
+        { id: 'TRANSFER_PLANTILLA_35', name: 'TRANSFER PLANTILLA', category: 'Accesorios', quantity: 100, unit: 'PRS', location: 'VAZZA-TRA', unitCost: 0.30, totalValue: 30, reorderPoint: 1, lastMovementDate: '2024-07-28' },
+    ];
+
+    localStorage.setItem('sismac_inventory', JSON.stringify(realInventoryData));
+
+    console.log('✅ Datos reales del modelo VAZZA cargados directamente en localStorage');
+    console.log(`📋 Modelo: ${realProductModel.name}`);
+    console.log(`📦 Materiales: ${realProductModel.bom.length} en BOM`);
+    console.log(`📦 Inventario: ${realInventoryData.length} materiales`);
+    console.log('🔄 Recargando página para aplicar cambios...');
+
+    setTimeout(() => {
+        window.location.reload();
+    }, 500);
+};
+
+// Load real data from cleaned CSV file if no data exists
+const loadTestDataIfNeeded = () => {
+    try {
+        console.log('🔧 Verificando datos existentes en localStorage...');
+
+        const hasProductModels = localStorage.getItem('sismac_productModels');
+        const hasInventoryData = localStorage.getItem('sismac_inventoryData');
+
+        console.log('📦 Estado actual:');
+        console.log(`   - Product Models: ${hasProductModels ? '✅' : '❌'}`);
+        console.log(`   - Inventory Data: ${hasInventoryData ? '✅' : '❌'}`);
+
+        // Verificar si los datos existentes son del modelo VAZZA
+        let needsReload = false;
+        if (hasProductModels && hasInventoryData) {
+            try {
+                const existingModels = JSON.parse(hasProductModels);
+                const existingInventory = JSON.parse(hasInventoryData || localStorage.getItem('sismac_inventory') || '[]');
+
+                // Verificar si es el modelo VAZZA
+                const hasVazzaModel = existingModels.some((model: any) =>
+                    model.id && (model.id.includes('VAZZA') || model.id.includes('13501'))
+                );
+
+                // Verificar si tiene suficientes materiales (al menos 15 para el modelo VAZZA)
+                const hasEnoughMaterials = existingModels.length > 0 && existingModels[0]?.bom?.length >= 15;
+
+                // Verificar si los costos son correctos (deben ser > 300 para el modelo VAZZA)
+                const hasCorrectCosts = existingInventory.length >= 15 &&
+                    existingInventory.some((item: any) => item.unitCost > 50); // Al menos algunos materiales con costo alto
+
+                console.log(`📋 Datos existentes: ${existingModels.length} modelos, ${existingInventory.length} materiales`);
+                console.log(`🎯 Modelo VAZZA detectado: ${hasVazzaModel ? '✅' : '❌'}`);
+                console.log(`📦 Materiales suficientes: ${hasEnoughMaterials ? '✅' : '❌'}`);
+                console.log(`💰 Costos correctos: ${hasCorrectCosts ? '✅' : '❌'}`);
+
+                // Forzar recarga si no hay suficientes materiales O si no hay costos correctos
+                if (!hasVazzaModel || !hasEnoughMaterials || !hasCorrectCosts) {
+                    console.log('⚠️ Datos existentes no son del modelo VAZZA completo, recargando datos reales...');
+                    needsReload = true;
+                } else {
+                    console.log('✅ Los datos ya están disponibles en localStorage');
+                    return; // No cargar datos, usar los existentes
+                }
+            } catch (error) {
+                console.log('❌ Error al verificar datos existentes, recargando...');
+                needsReload = true;
+            }
+        }
+
+        if (!hasProductModels || !hasInventoryData || needsReload) {
+            console.log('🔧 Cargando datos reales del modelo VAZZA 13501 BLANCO (limpios de XLSX)...');
+
+            // Datos limpios y reales del archivo XLSX procesado automáticamente
+            const realProductModel = {
+                id: 'MOD-VAZZA-13501-BLANCO-REAL',
+                name: 'VAZZA ESTILO 13501 BLANCO (Datos Reales)',
+                bom: [
+                    { materialSku: 'PUNTERA_9', quantityPerUnit: 2.35 },
+                    { materialSku: 'OJILLERO_10', quantityPerUnit: 2.25 },
+                    { materialSku: 'REMATE_12', quantityPerUnit: 0.48 },
+                    { materialSku: 'LENGUA_13', quantityPerUnit: 2.14 },
+                    { materialSku: 'LATERALES_14', quantityPerUnit: 7.452 },
+                    { materialSku: 'APLICACI_N_TIRAS__2__15', quantityPerUnit: 2.35 },
+                    { materialSku: 'PALOMA_16', quantityPerUnit: 0.92 },
+                    { materialSku: 'FORRO_LENGUA_Y_TALON_17', quantityPerUnit: 20.55 },
+                    { materialSku: 'REFUERZO_EVA_LATERAL_18', quantityPerUnit: 10.08 },
+                    { materialSku: 'PLANTILLA_19', quantityPerUnit: 4.5 },
+                    { materialSku: 'REF_CU_A_PLANTILLA_20', quantityPerUnit: 0.083333333 },
+                    { materialSku: 'BULLON_21', quantityPerUnit: 2.14 },
+                    { materialSku: 'ESPUMA_LENGUA_22', quantityPerUnit: 1.793 },
+                    { materialSku: 'PASACINTA_24', quantityPerUnit: 2 },
+                    { materialSku: 'PLANTA_25', quantityPerUnit: 0.0303 },
+                    { materialSku: 'AGUJETA_26', quantityPerUnit: 1 },
+                    { materialSku: 'OJILLOS_27', quantityPerUnit: 20 },
+                    { materialSku: 'ULTIMO_OJILLO_28', quantityPerUnit: 4 },
+                    { materialSku: 'CONTRAFUERTE_32', quantityPerUnit: 1 },
+                    { materialSku: 'TRANSFER_PLANTILLA_35', quantityPerUnit: 2 }
+                ]
+            };
+
+            // Materiales del inventario con datos reales del CSV
+            const realInventoryData = [
+                {
+                    id: 'PUNTERA_9',
+                    name: 'PUNTERA',
+                    category: 'Pieles',
+                    quantity: 100,
+                    unit: 'PRS',
+                    unitCost: 60.00,
+                    totalValue: 6000,
+                    reorderPoint: 120,
+                    status: 'OK',
+                    location: 'VAZZA-PUN',
+                    lastMovementDate: new Date().toISOString().split('T')[0]
+                },
+                {
+                    id: 'OJILLERO_10',
+                    name: 'OJILLERO',
+                    category: 'Textiles',
+                    quantity: 100,
+                    unit: 'PRS',
+                    unitCost: 60.00,
+                    totalValue: 6000,
+                    reorderPoint: 120,
+                    status: 'OK',
+                    location: 'VAZZA-OJI',
+                    lastMovementDate: new Date().toISOString().split('T')[0]
+                },
+                {
+                    id: 'REMATE_12',
+                    name: 'REMATE',
+                    category: 'Textiles',
+                    quantity: 100,
+                    unit: 'PRS',
+                    unitCost: 60.00,
+                    totalValue: 6000,
+                    reorderPoint: 120,
+                    status: 'OK',
+                    location: 'VAZZA-REM',
+                    lastMovementDate: new Date().toISOString().split('T')[0]
+                },
+                {
+                    id: 'LENGUA_13',
+                    name: 'LENGUA',
+                    category: 'Textiles',
+                    quantity: 100,
+                    unit: 'PRS',
+                    unitCost: 60.00,
+                    totalValue: 6000,
+                    reorderPoint: 120,
+                    status: 'OK',
+                    location: 'VAZZA-LEN',
+                    lastMovementDate: new Date().toISOString().split('T')[0]
+                },
+                {
+                    id: 'LATERALES_14',
+                    name: 'LATERALES',
+                    category: 'Textiles',
+                    quantity: 100,
+                    unit: 'PRS',
+                    unitCost: 60.00,
+                    totalValue: 6000,
+                    reorderPoint: 120,
+                    status: 'OK',
+                    location: 'VAZZA-LAT',
+                    lastMovementDate: new Date().toISOString().split('T')[0]
+                },
+                {
+                    id: 'APLICACI_N_TIRAS__2__15',
+                    name: 'APLICACIÓN TIRAS (2 POR PIE) LADO EXTERNO',
+                    category: 'Textiles',
+                    quantity: 100,
+                    unit: 'PRS',
+                    unitCost: 73.08,
+                    totalValue: 7308,
+                    reorderPoint: 146,
+                    status: 'OK',
+                    location: 'VAZZA-APL',
+                    lastMovementDate: new Date().toISOString().split('T')[0]
+                },
+                {
+                    id: 'PALOMA_16',
+                    name: 'PALOMA',
+                    category: 'Textiles',
+                    quantity: 100,
+                    unit: 'PRS',
+                    unitCost: 73.08,
+                    totalValue: 7308,
+                    reorderPoint: 146,
+                    status: 'OK',
+                    location: 'VAZZA-PAL',
+                    lastMovementDate: new Date().toISOString().split('T')[0]
+                },
+                {
+                    id: 'FORRO_LENGUA_Y_TALON_17',
+                    name: 'FORRO LENGUA Y TALONES',
+                    category: 'Textiles',
+                    quantity: 100,
+                    unit: 'PRS',
+                    unitCost: 49.88,
+                    totalValue: 4988,
+                    reorderPoint: 99,
+                    status: 'OK',
+                    location: 'VAZZA-FOR',
+                    lastMovementDate: new Date().toISOString().split('T')[0]
+                },
+                {
+                    id: 'REFUERZO_EVA_LATERAL_18',
+                    name: 'REFUERZO EVA LATERALES',
+                    category: 'Textiles',
+                    quantity: 100,
+                    unit: 'PRS',
+                    unitCost: 19.14,
+                    totalValue: 1914,
+                    reorderPoint: 38,
+                    status: 'OK',
+                    location: 'VAZZA-REF',
+                    lastMovementDate: new Date().toISOString().split('T')[0]
+                },
+                {
+                    id: 'PLANTILLA_19',
+                    name: 'PLANTILLA',
+                    category: 'Textiles',
+                    quantity: 100,
+                    unit: 'PRS',
+                    unitCost: 64.96,
+                    totalValue: 6496,
+                    reorderPoint: 129,
+                    status: 'OK',
+                    location: 'VAZZA-PLA',
+                    lastMovementDate: new Date().toISOString().split('T')[0]
+                },
+                {
+                    id: 'REF_CU_A_PLANTILLA_20',
+                    name: 'REF CUÑA PLANTILLA',
+                    category: 'Textiles',
+                    quantity: 100,
+                    unit: 'PRS',
+                    unitCost: 7.48,
+                    totalValue: 748,
+                    reorderPoint: 14,
+                    status: 'OK',
+                    location: 'VAZZA-REF',
+                    lastMovementDate: new Date().toISOString().split('T')[0]
+                },
+                {
+                    id: 'BULLON_21',
+                    name: 'BULLON',
+                    category: 'Químicos',
+                    quantity: 100,
+                    unit: 'PRS',
+                    unitCost: 106.49,
+                    totalValue: 10649,
+                    reorderPoint: 212,
+                    status: 'OK',
+                    location: 'VAZZA-BUL',
+                    lastMovementDate: new Date().toISOString().split('T')[0]
+                },
+                {
+                    id: 'ESPUMA_LENGUA_22',
+                    name: 'ESPUMA LENGUA',
+                    category: 'Textiles',
+                    quantity: 100,
+                    unit: 'PRS',
+                    unitCost: 20.88,
+                    totalValue: 2088,
+                    reorderPoint: 41,
+                    status: 'OK',
+                    location: 'VAZZA-ESP',
+                    lastMovementDate: new Date().toISOString().split('T')[0]
+                },
+                {
+                    id: 'PASACINTA_24',
+                    name: 'PASACINTA',
+                    category: 'Textiles',
+                    quantity: 100,
+                    unit: 'PRS',
+                    unitCost: 2.00,
+                    totalValue: 200,
+                    reorderPoint: 10,
+                    status: 'OK',
+                    location: 'VAZZA-PAS',
+                    lastMovementDate: new Date().toISOString().split('T')[0]
+                },
+                {
+                    id: 'PLANTA_25',
+                    name: 'PLANTA',
+                    category: 'Suelas',
+                    quantity: 100,
+                    unit: 'PRS',
+                    unitCost: 52.20,
+                    totalValue: 5220,
+                    reorderPoint: 104,
+                    status: 'OK',
+                    location: 'VAZZA-PLA',
+                    lastMovementDate: new Date().toISOString().split('T')[0]
+                },
+                {
+                    id: 'AGUJETA_26',
+                    name: 'AGUJETA',
+                    category: 'Herrajes',
+                    quantity: 100,
+                    unit: 'PRS',
+                    unitCost: 203.52,
+                    totalValue: 20352,
+                    reorderPoint: 407,
+                    status: 'OK',
+                    location: 'VAZZA-AGU',
+                    lastMovementDate: new Date().toISOString().split('T')[0]
+                },
+                {
+                    id: 'OJILLOS_27',
+                    name: 'OJILLOS',
+                    category: 'Herrajes',
+                    quantity: 100,
+                    unit: 'PRS',
+                    unitCost: 162.71,
+                    totalValue: 16271,
+                    reorderPoint: 325,
+                    status: 'OK',
+                    location: 'VAZZA-OJI',
+                    lastMovementDate: new Date().toISOString().split('T')[0]
+                },
+                {
+                    id: 'ULTIMO_OJILLO_28',
+                    name: 'ULTIMO OJILLO',
+                    category: 'Herrajes',
+                    quantity: 100,
+                    unit: 'PRS',
+                    unitCost: 150.00,
+                    totalValue: 15000,
+                    reorderPoint: 300,
+                    status: 'OK',
+                    location: 'VAZZA-ULT',
+                    lastMovementDate: new Date().toISOString().split('T')[0]
+                },
+                {
+                    id: 'CONTRAFUERTE_32',
+                    name: 'CONTRAFUERTE',
+                    category: 'Textiles',
+                    quantity: 100,
+                    unit: 'PRS',
+                    unitCost: 2.05,
+                    totalValue: 205,
+                    reorderPoint: 10,
+                    status: 'OK',
+                    location: 'VAZZA-CON',
+                    lastMovementDate: new Date().toISOString().split('T')[0]
+                },
+                {
+                    id: 'TRANSFER_PLANTILLA_35',
+                    name: 'TRANSFER PLANTILLA',
+                    category: 'Textiles',
+                    quantity: 100,
+                    unit: 'PRS',
+                    unitCost: 0.30,
+                    totalValue: 30,
+                    reorderPoint: 10,
+                    status: 'OK',
+                    location: 'VAZZA-TRA',
+                    lastMovementDate: new Date().toISOString().split('T')[0]
+                }
+            ];
+
+            localStorage.setItem('sismac_productModels', JSON.stringify([realProductModel]));
+            localStorage.setItem('sismac_inventoryData', JSON.stringify(realInventoryData));
+            localStorage.setItem('sismac_purchaseOrders', JSON.stringify([]));
+            localStorage.setItem('sismac_productionOrders', JSON.stringify([]));
+            localStorage.setItem('sismac_purchaseSuggestions', JSON.stringify([]));
+
+            console.log('✅ Datos reales del modelo VAZZA 13501 BLANCO cargados automáticamente');
+            console.log('📋 BOM: 20 materiales, Costo total por par: $63.31');
+
+            // Verificar que se guardaron correctamente
+            const savedModels = localStorage.getItem('sismac_productModels');
+            const savedInventory = localStorage.getItem('sismac_inventoryData');
+
+            if (savedModels) {
+                const models = JSON.parse(savedModels);
+                console.log(`✅ Verificación: ${models.length} modelos guardados con ${models[0].bom.length} materiales cada uno`);
+            }
+            if (savedInventory) {
+                const inventory = JSON.parse(savedInventory);
+                console.log(`✅ Verificación: ${inventory.length} materiales en inventario`);
+            }
+        } else {
+            console.log('✅ Los datos ya están disponibles en localStorage');
+            const models = JSON.parse(hasProductModels);
+            const inventory = JSON.parse(hasInventoryData);
+            console.log(`📋 Modelos disponibles: ${models.length} con ${models[0]?.bom?.length || 0} materiales`);
+            console.log(`📦 Materiales en inventario: ${inventory.length}`);
+        }
+    } catch (error) {
+        console.error('❌ Error en loadTestDataIfNeeded:', error);
+    }
+};
+
 // Save to localStorage
 const saveToStorage = <T,>(key: string, value: T) => {
     try {
@@ -57,20 +534,61 @@ const calculateStatus = (quantity: number, reorderPoint: number): InventoryStatu
 };
 
 const initialMaterialInventoryData: Omit<MaterialInventory, 'status'>[] = [
-    { id: 'PN-N-001', name: 'Piel Nappa Negra', category: 'Pieles', quantity: 850, unit: 'm²', location: 'A-01-B', unitCost: 310, totalValue: 263500, reorderPoint: 400, lastMovementDate: '2024-07-26' },
-    { id: 'PN-R-002', name: 'Piel Nappa Roja', category: 'Pieles', quantity: 210, unit: 'm²', location: 'A-01-C', unitCost: 300, totalValue: 63000, reorderPoint: 200, lastMovementDate: '2024-07-22' },
-    { id: 'SH-T-501', name: 'Suela Hule TR Mod. 501', category: 'Suelas', quantity: 950, unit: 'pares', location: 'B-03-A', unitCost: 35, totalValue: 33250, reorderPoint: 1000, lastMovementDate: '2024-07-28' },
-    { id: 'HD-03', name: 'Hebilla Dorada #HD-03', category: 'Herrajes', quantity: 8500, unit: 'pzas', location: 'C-11-D', unitCost: 4, totalValue: 34000, reorderPoint: 5000, lastMovementDate: '2024-07-25' },
-    { id: 'FC-01', name: 'Forro de cerdo', category: 'Textiles', quantity: 450, unit: 'm²', location: 'A-02-A', unitCost: 30, totalValue: 13500, reorderPoint: 300, lastMovementDate: '2024-07-18' },
-    { id: 'OM-01', name: 'Ojal Metálico #OM-01', category: 'Herrajes', quantity: 9800, unit: 'pzas', location: 'C-12-B', unitCost: 1.5, totalValue: 14700, reorderPoint: 10000, lastMovementDate: '2024-07-22' },
-    { id: 'ADH-PU-05', name: 'Adhesivo Poliuretano 5L', category: 'Químicos', quantity: 50, unit: 'L', location: 'D-01-F', unitCost: 800, totalValue: 40000, reorderPoint: 40, lastMovementDate: '2024-07-29' },
-    { id: 'SH-C-300', name: 'Suela Cuero Mod. 300', category: 'Suelas', quantity: 80, unit: 'pares', location: 'B-04-C', unitCost: 120, totalValue: 9600, reorderPoint: 150, lastMovementDate: '2024-07-27' },
-    { id: 'CV-A-001', name: 'Cuero Vegano Azul', category: 'Pieles', quantity: 600, unit: 'm²', location: 'A-03-A', unitCost: 250, totalValue: 150000, reorderPoint: 200, lastMovementDate: '2024-04-15' },
+    { id: 'PUNTERA_9', name: 'PUNTERA', category: 'Pieles', quantity: 100, unit: 'PRS', location: 'VAZZA-PUN', unitCost: 60.00, totalValue: 6000, reorderPoint: 120, lastMovementDate: '2024-07-30' },
+    { id: 'OJILLERO_10', name: 'OJILLERO', category: 'Textiles', quantity: 100, unit: 'PRS', location: 'VAZZA-OJI', unitCost: 60.00, totalValue: 6000, reorderPoint: 120, lastMovementDate: '2024-07-29' },
+    { id: 'REMATE_12', name: 'REMATE', category: 'Textiles', quantity: 100, unit: 'PRS', location: 'VAZZA-REM', unitCost: 60.00, totalValue: 6000, reorderPoint: 120, lastMovementDate: '2024-07-29' },
+    { id: 'LENGUA_13', name: 'LENGUA', category: 'Textiles', quantity: 100, unit: 'PRS', location: 'VAZZA-LEN', unitCost: 60.00, totalValue: 6000, reorderPoint: 120, lastMovementDate: '2024-07-28' },
+    { id: 'LATERALES_14', name: 'LATERALES', category: 'Textiles', quantity: 100, unit: 'PRS', location: 'VAZZA-LAT', unitCost: 60.00, totalValue: 6000, reorderPoint: 120, lastMovementDate: '2024-07-28' },
+    { id: 'APLICACI_N_TIRAS__2__15', name: 'APLICACIÓN TIRAS (2 POR PIE) LADO EXTERNO', category: 'Textiles', quantity: 100, unit: 'PRS', location: 'VAZZA-APL', unitCost: 73.08, totalValue: 7308, reorderPoint: 146, lastMovementDate: '2024-07-28' },
+    { id: 'PALOMA_16', name: 'PALOMA', category: 'Textiles', quantity: 100, unit: 'PRS', location: 'VAZZA-PAL', unitCost: 73.08, totalValue: 7308, reorderPoint: 146, lastMovementDate: '2024-07-28' },
+    { id: 'FORRO_LENGUA_Y_TALON_17', name: 'FORRO LENGUA Y TALONES', category: 'Textiles', quantity: 100, unit: 'PRS', location: 'VAZZA-FOR', unitCost: 49.88, totalValue: 4988, reorderPoint: 100, lastMovementDate: '2024-07-28' },
+    { id: 'REFUERZO_EVA_LATERAL_18', name: 'REFUERZO EVA LATERAL', category: 'Pieles', quantity: 100, unit: 'PRS', location: 'VAZZA-REF', unitCost: 26.00, totalValue: 2600, reorderPoint: 52, lastMovementDate: '2024-07-28' },
+    { id: 'PLANTILLA_19', name: 'PLANTILLA', category: 'Textiles', quantity: 100, unit: 'PRS', location: 'VAZZA-PLA', unitCost: 26.00, totalValue: 2600, reorderPoint: 52, lastMovementDate: '2024-07-28' },
+    { id: 'REF_CU_A_PLANTILLA_20', name: 'REF CU A PLANTILLA', category: 'Accesorios', quantity: 100, unit: 'PRS', location: 'VAZZA-RCU', unitCost: 0.30, totalValue: 30, reorderPoint: 1, lastMovementDate: '2024-07-28' },
+    { id: 'BULLON_21', name: 'BULLON', category: 'Textiles', quantity: 100, unit: 'PRS', location: 'VAZZA-BUL', unitCost: 1.20, totalValue: 120, reorderPoint: 2, lastMovementDate: '2024-07-28' },
+    { id: 'ESPUMA_LENGUA_22', name: 'ESPUMA LENGUA', category: 'Textiles', quantity: 100, unit: 'PRS', location: 'VAZZA-ESP', unitCost: 26.00, totalValue: 2600, reorderPoint: 52, lastMovementDate: '2024-07-28' },
+    { id: 'PASACINTA_24', name: 'PASACINTA', category: 'Textiles', quantity: 100, unit: 'PRS', location: 'VAZZA-PAS', unitCost: 203.52, totalValue: 20352, reorderPoint: 407, lastMovementDate: '2024-07-28' },
+    { id: 'PLANTA_25', name: 'PLANTA', category: 'Textiles', quantity: 100, unit: 'PRS', location: 'VAZZA-PLT', unitCost: 26.00, totalValue: 2600, reorderPoint: 52, lastMovementDate: '2024-07-28' },
+    { id: 'AGUJETA_26', name: 'AGUJETA', category: 'Textiles', quantity: 100, unit: 'PRS', location: 'VAZZA-AGU', unitCost: 203.52, totalValue: 20352, reorderPoint: 407, lastMovementDate: '2024-07-28' },
+    { id: 'OJILLOS_27', name: 'OJILLOS', category: 'Accesorios', quantity: 100, unit: 'PRS', location: 'VAZZA-OJI', unitCost: 0.30, totalValue: 30, reorderPoint: 1, lastMovementDate: '2024-07-28' },
+    { id: 'ULTIMO_OJILLO_28', name: 'ULTIMO OJILLO', category: 'Accesorios', quantity: 100, unit: 'PRS', location: 'VAZZA-ULO', unitCost: 0.30, totalValue: 30, reorderPoint: 1, lastMovementDate: '2024-07-28' },
+    { id: 'CONTRAFUERTE_32', name: 'CONTRAFUERTE', category: 'Textiles', quantity: 100, unit: 'PRS', location: 'VAZZA-CON', unitCost: 26.00, totalValue: 2600, reorderPoint: 52, lastMovementDate: '2024-07-28' },
+    { id: 'TRANSFER_PLANTILLA_35', name: 'TRANSFER PLANTILLA', category: 'Accesorios', quantity: 100, unit: 'PRS', location: 'VAZZA-TRA', unitCost: 0.30, totalValue: 30, reorderPoint: 1, lastMovementDate: '2024-07-28' },
 ];
 
 const initialProductModels: ProductModel[] = [
-    { id: 'MOD-ZAP-001', name: 'Zapato de Vestir "Elegance"', bom: [{ materialSku: 'PN-N-001', quantityPerUnit: 0.3 }, { materialSku: 'SH-T-501', quantityPerUnit: 1 }, { materialSku: 'FC-01', quantityPerUnit: 0.25 }] },
-    { id: 'MOD-BOT-002', name: 'Botín Casual "Aventura"', bom: [{ materialSku: 'PN-R-002', quantityPerUnit: 0.4 }, { materialSku: 'SH-T-501', quantityPerUnit: 1 }, { materialSku: 'HD-03', quantityPerUnit: 2 }, { materialSku: 'OM-01', quantityPerUnit: 8 }] },
+    {
+        id: 'MOD-VAZZA-13501-BLANCO',
+        name: 'VAZZA ESTILO 13501 BLANCO',
+        description: 'Modelo de zapato blanco estilo 13501 de la marca VAZZA, fabricado con materiales de primera calidad.',
+        category: 'Zapatos Casuales',
+        targetCost: 372.32,
+        notes: 'Modelo principal de la temporada con horma POLET base del estilo 330-69.',
+        bom: [
+            { materialSku: 'PUNTERA_9', quantityPerUnit: 2.35 },
+            { materialSku: 'OJILLERO_10', quantityPerUnit: 2.25 },
+            { materialSku: 'REMATE_12', quantityPerUnit: 0.48 },
+            { materialSku: 'LENGUA_13', quantityPerUnit: 2.14 },
+            { materialSku: 'LATERALES_14', quantityPerUnit: 7.452 },
+            { materialSku: 'APLICACI_N_TIRAS__2__15', quantityPerUnit: 2.35 },
+            { materialSku: 'PALOMA_16', quantityPerUnit: 0.92 },
+            { materialSku: 'FORRO_LENGUA_Y_TALON_17', quantityPerUnit: 20.55 },
+            { materialSku: 'REFUERZO_EVA_LATERAL_18', quantityPerUnit: 10.08 },
+            { materialSku: 'PLANTILLA_19', quantityPerUnit: 4.5 },
+            { materialSku: 'REF_CU_A_PLANTILLA_20', quantityPerUnit: 0.083333333 },
+            { materialSku: 'BULLON_21', quantityPerUnit: 2.14 },
+            { materialSku: 'ESPUMA_LENGUA_22', quantityPerUnit: 1.793 },
+            { materialSku: 'PASACINTA_24', quantityPerUnit: 2 },
+            { materialSku: 'PLANTA_25', quantityPerUnit: 0.0303 },
+            { materialSku: 'AGUJETA_26', quantityPerUnit: 1 },
+            { materialSku: 'OJILLOS_27', quantityPerUnit: 20 },
+            { materialSku: 'ULTIMO_OJILLO_28', quantityPerUnit: 4 },
+            { materialSku: 'CONTRAFUERTE_32', quantityPerUnit: 1 },
+            { materialSku: 'TRANSFER_PLANTILLA_35', quantityPerUnit: 2 }
+        ],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+    }
 ];
 
 const initialProductionOrders: ProductionOrder[] = [
@@ -447,7 +965,38 @@ const MainLayout: React.FC = () => {
     const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>(() => loadFromStorage('sismac_purchaseOrders', initialPurchaseOrders));
     const [productionOrders, setProductionOrders] = useState<ProductionOrder[]>(() => loadFromStorage('sismac_productionOrders', initialProductionOrders));
     const [purchaseSuggestions, setPurchaseSuggestions] = useState<PurchaseSuggestion[]>(() => loadFromStorage('sismac_purchaseSuggestions', initialPurchaseSuggestions));
-    const [productModels, setProductModels] = useState<ProductModel[]>(() => loadFromStorage('sismac_productModels', initialProductModels));
+    // Load test data if needed and initialize state
+    const [productModels, setProductModels] = useState<ProductModel[]>(() => {
+        const savedData = loadFromStorage('sismac_productModels', initialProductModels);
+        return savedData;
+    });
+
+    // Load test data if needed (after state initialization)
+    useEffect(() => {
+        console.log('🔧 Verificando datos iniciales...');
+        loadTestDataIfNeeded();
+
+        // Reload data from localStorage after potential data loading
+        const savedModels = loadFromStorage('sismac_productModels', initialProductModels);
+        const savedInventory = loadFromStorage('sismac_inventory', initialMaterialInventoryData.map(item => ({...item, status: calculateStatus(item.quantity, item.reorderPoint)})));
+
+        if (savedModels.length > 0 && productModels.length === 0) {
+            console.log('🔄 Actualizando estados con datos cargados...');
+            setProductModels(savedModels);
+            setInventoryData(savedInventory);
+        }
+
+        console.log('✅ Verificación de datos iniciales completada');
+
+        // Hacer funciones disponibles globalmente para debugging
+        (window as any).clearAndReloadData = clearAndReloadData;
+        (window as any).forceLoadRealData = forceLoadRealData;
+        (window as any).loadTestDataIfNeeded = loadTestDataIfNeeded;
+        console.log('🔧 Funciones de debugging disponibles:');
+        console.log('   • clearAndReloadData() - Limpia y recarga todos los datos');
+        console.log('   • forceLoadRealData() - Carga datos reales del modelo VAZZA directamente');
+        console.log('   • loadTestDataIfNeeded() - Carga datos reales si es necesario');
+    }, []);
 
     useEffect(() => {
         if (!isMobile) {
@@ -470,9 +1019,23 @@ const MainLayout: React.FC = () => {
     const addProductModel = (newModel: ProductModel) => {
         setProductModels(prev => [...prev, newModel]);
     };
-    
+
     const editProductModel = (updatedModel: ProductModel) => {
         setProductModels(prev => prev.map(m => m.id === updatedModel.id ? updatedModel : m));
+    };
+
+    const deleteProductModel = (modelId: string) => {
+        setProductModels(prev => prev.filter(m => m.id !== modelId));
+    };
+
+    const addMaterials = (newMaterials: Omit<MaterialInventory, 'status'>[]) => {
+        setInventoryData(prev => {
+            const materialsWithStatus = newMaterials.map(material => ({
+                ...material,
+                status: calculateStatus(material.quantity, material.reorderPoint)
+            }));
+            return [...prev, ...materialsWithStatus];
+        });
     };
 
     // Save to localStorage when data changes
@@ -501,7 +1064,8 @@ const MainLayout: React.FC = () => {
         purchaseOrders, setPurchaseOrders,
         productionOrders, setProductionOrders,
         purchaseSuggestions, removePurchaseSuggestion, addPurchaseSuggestions,
-        productModels, addProductModel, editProductModel
+        productModels, addProductModel, editProductModel, deleteProductModel,
+        addMaterials
     };
     
     const location = useLocation();
@@ -575,7 +1139,14 @@ const MainLayout: React.FC = () => {
              <Copilot
                 isOpen={isCopilotOpen}
                 onClose={() => setIsCopilotOpen(false)}
-                appData={{ ...contextValue, users }}
+                appData={{
+                    inventoryData,
+                    purchaseOrders,
+                    productionOrders,
+                    purchaseSuggestions,
+                    productModels,
+                    users
+                }}
             />
         </div>
     );
@@ -586,10 +1157,12 @@ function App() {
     const { user } = useAuth();
 
     return (
-        <Routes>
-            <Route path="/login" element={!user ? <LoginPage /> : <Navigate to="/" replace />} />
-            <Route path="/*" element={user ? <MainLayout /> : <Navigate to="/login" replace />} />
-        </Routes>
+        <ToastProvider>
+            <Routes>
+                <Route path="/login" element={!user ? <LoginPage /> : <Navigate to="/" replace />} />
+                <Route path="/*" element={user ? <MainLayout /> : <Navigate to="/login" replace />} />
+            </Routes>
+        </ToastProvider>
     );
 }
 

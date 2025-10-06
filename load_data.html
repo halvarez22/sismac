@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cargar Datos del Modelo VAZZA 13501 BLANCO</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .data-display {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border-left: 4px solid #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Cargar Datos del Modelo VAZZA 13501 BLANCO</h1>
+
+        <div class="info">
+            <h3>📋 Instrucciones:</h3>
+            <ol>
+                <li>Haz clic en el botón "Cargar Datos" abajo</li>
+                <li>Se cargarán automáticamente los datos del modelo VAZZA ESTILO 13501 BLANCO</li>
+                <li>Ve a la aplicación en http://localhost:3000</li>
+                <li>Refresca la página (F5)</li>
+                <li>Prueba el Copilot con preguntas sobre el modelo 13501</li>
+            </ol>
+        </div>
+
+        <button onclick="loadData()">🚀 Cargar Datos del Modelo VAZZA 13501 BLANCO</button>
+
+        <div id="status"></div>
+
+        <div class="info" id="model-info" style="display: none;">
+            <h3>📊 Datos que se cargarán:</h3>
+            <div class="data-display">
+                <h4>Modelo: VAZZA ESTILO 13501 BLANCO</h4>
+                <p><strong>5 Materiales en el BOM:</strong></p>
+                <ul>
+                    <li>PUNTERA ROBIN SPORT: 2.35 MT × $60.00 = $141.00</li>
+                    <li>SUELA PRINCESA/MANGO/VEGAN T.R. BLANCA: 1 PRS × $26.00 = $26.00</li>
+                    <li>AGUJETA PLANA CREES #120 CM: 1 GRUESAS × $203.52 = $203.52</li>
+                    <li>TRANSFER PLANTILLA VAZZA ORO: 2 PZAS × $0.30 = $0.60</li>
+                    <li>BULLON - ESPONJA 10 MM / 50 KG: 1 KG × $1.20 = $1.20</li>
+                </ul>
+                <p><strong>💰 Costo Total por Par: $372.32</strong></p>
+            </div>
+        </div>
+
+        <div class="info" id="test-questions" style="display: none;">
+            <h3>🧪 Preguntas para probar el Copilot:</h3>
+            <ol>
+                <li>"¿Cuál es el costo total por par del modelo VAZZA ESTILO 13501 BLANCO?"</li>
+                <li>"¿Cuántos materiales tiene el modelo 13501 BLANCO?"</li>
+                <li>"¿Cuál es el material más caro del modelo 13501?"</li>
+                <li>"dame la lista de materiales del modelo 13501"</li>
+                <li>"¿Cuánto cuesta producir 100 pares del estilo 13501 BLANCO?"</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        function loadData() {
+            const status = document.getElementById('status');
+            const modelInfo = document.getElementById('model-info');
+            const testQuestions = document.getElementById('test-questions');
+
+            status.innerHTML = '<div class="success">✅ Cargando datos...</div>';
+            modelInfo.style.display = 'block';
+            testQuestions.style.display = 'block';
+
+            // Datos del modelo VAZZA ESTILO 13501 BLANCO (5 materiales)
+            const testProductModel = {
+                id: 'MOD-VAZZA-13501-BLANCO',
+                name: 'VAZZA ESTILO 13501 BLANCO',
+                bom: [
+                    { materialSku: 'ROBIN_SPORT_60_0', quantityPerUnit: 2.35 },
+                    { materialSku: 'SUELA_PRINCESA_26_0', quantityPerUnit: 1 },
+                    { materialSku: 'AGUJETA_CREES_203_52', quantityPerUnit: 1 },
+                    { materialSku: 'TRANSFER_VAZZA_0_30', quantityPerUnit: 2 },
+                    { materialSku: 'BULLON_ESPONJA_1_20', quantityPerUnit: 1 }
+                ]
+            };
+
+            // Materiales del inventario
+            const testInventoryData = [
+                {
+                    id: 'ROBIN_SPORT_60_0',
+                    name: 'PUNTERA ROBIN SPORT',
+                    category: 'Textiles',
+                    quantity: 100,
+                    unit: 'MT',
+                    unitCost: 60.00,
+                    totalValue: 6000,
+                    reorderPoint: 50,
+                    status: 'OK',
+                    location: 'IMPORT-A-01',
+                    lastMovementDate: new Date().toISOString().split('T')[0]
+                },
+                {
+                    id: 'SUELA_PRINCESA_26_0',
+                    name: 'SUELA PRINCESA/MANGO/VEGAN T.R. BLANCA',
+                    category: 'Suelas',
+                    quantity: 50,
+                    unit: 'PRS',
+                    unitCost: 26.00,
+                    totalValue: 1300,
+                    reorderPoint: 25,
+                    status: 'OK',
+                    location: 'IMPORT-B-01',
+                    lastMovementDate: new Date().toISOString().split('T')[0]
+                },
+                {
+                    id: 'AGUJETA_CREES_203_52',
+                    name: 'AGUJETA PLANA CREES #120 CM',
+                    category: 'Herrajes',
+                    quantity: 200,
+                    unit: 'GRUESAS',
+                    unitCost: 203.52,
+                    totalValue: 40704,
+                    reorderPoint: 100,
+                    status: 'OK',
+                    location: 'IMPORT-C-01',
+                    lastMovementDate: new Date().toISOString().split('T')[0]
+                },
+                {
+                    id: 'TRANSFER_VAZZA_0_30',
+                    name: 'TRANSFER PLANTILLA VAZZA ORO',
+                    category: 'Textiles',
+                    quantity: 500,
+                    unit: 'PZAS',
+                    unitCost: 0.30,
+                    totalValue: 150,
+                    reorderPoint: 200,
+                    status: 'OK',
+                    location: 'IMPORT-D-01',
+                    lastMovementDate: new Date().toISOString().split('T')[0]
+                },
+                {
+                    id: 'BULLON_ESPONJA_1_20',
+                    name: 'BULLON - ESPONJA 10 MM / 50 KG',
+                    category: 'Químicos',
+                    quantity: 25,
+                    unit: 'KG',
+                    unitCost: 1.20,
+                    totalValue: 30,
+                    reorderPoint: 10,
+                    status: 'OK',
+                    location: 'IMPORT-A-02',
+                    lastMovementDate: new Date().toISOString().split('T')[0]
+                }
+            ];
+
+            try {
+                // Guardar datos en localStorage
+                localStorage.setItem('sismac_productModels', JSON.stringify([testProductModel]));
+                localStorage.setItem('sismac_inventoryData', JSON.stringify(testInventoryData));
+                localStorage.setItem('sismac_purchaseOrders', JSON.stringify([]));
+                localStorage.setItem('sismac_productionOrders', JSON.stringify([]));
+                localStorage.setItem('sismac_purchaseSuggestions', JSON.stringify([]));
+
+                status.innerHTML = `
+                    <div class="success">✅ ¡Datos cargados exitosamente!</div>
+                    <div class="success">
+                        <h4>📊 Resumen:</h4>
+                        <ul>
+                            <li>✅ 1 Modelo de producto: VAZZA ESTILO 13501 BLANCO</li>
+                            <li>✅ 5 Materiales en el BOM</li>
+                            <li>✅ 5 Materiales en el inventario</li>
+                            <li>💰 Costo total por par: $372.32</li>
+                        </ul>
+                    </div>
+                `;
+
+                // Mostrar información del modelo
+                modelInfo.style.display = 'block';
+                testQuestions.style.display = 'block';
+
+            } catch (error) {
+                status.innerHTML = `<div style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 5px;">❌ Error al cargar datos: ${error.message}</div>`;
+            }
+        }
+
+        // Mostrar información al cargar la página
+        document.getElementById('model-info').style.display = 'block';
+        document.getElementById('test-questions').style.display = 'block';
+    </script>
+</body>
+</html>
