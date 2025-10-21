@@ -66,20 +66,10 @@ interface ModelState {
 
 // Helper function to save model to Firebase
 const saveModelToFirebase = async (model: Model) => {
-  console.log('💾 SAVING MODEL TO FIREBASE:', {
-    id: model.id,
-    moldCode: model.header?.moldCode,
-    client: model.header?.client,
-    color: model.header?.color,
-    requestedPairs: model.header?.requestedPairs,
-    materialsCount: model.materials?.length || 0
-  });
-
   try {
     await modelService.saveModel(model);
-    console.log('✅ MODEL SAVED SUCCESSFULLY TO FIREBASE');
   } catch (error) {
-    console.error('❌ ERROR SAVING MODEL TO FIREBASE:', error);
+    console.error('Error saving model to Firebase:', error);
     // Don't throw error to avoid blocking UI
   }
 };
@@ -258,19 +248,6 @@ export const useModelStore = createWithEqualityFn<ModelState & { isLoading: bool
           qualityCheckService.getAllChecks()
         ]);
 
-        console.log('🔥 FIREBASE DATA LOADED:');
-        console.log('Models loaded:', models.length);
-        models.forEach((model, index) => {
-          console.log(`Model ${index}:`, {
-            id: model.id,
-            moldCode: model.header?.moldCode,
-            client: model.header?.client,
-            color: model.header?.color,
-            requestedPairs: model.header?.requestedPairs,
-            materialsCount: model.materials?.length || 0
-          });
-        });
-
         // Apply dark mode
         if (isDarkMode) {
           document.documentElement.classList.add('dark');
@@ -322,10 +299,8 @@ export const useModelStore = createWithEqualityFn<ModelState & { isLoading: bool
       const newModelToSave = currentState.models[currentState.models.length - 1];
 
       // Then save to Firebase asynchronously (don't block UI)
-      modelService.saveModel(newModelToSave).then(() => {
-        console.log('✅ NEW MODEL SAVED TO FIREBASE:', newModelToSave.id);
-      }).catch(error => {
-        console.error('❌ ERROR SAVING NEW MODEL TO FIREBASE:', error);
+      modelService.saveModel(newModelToSave).catch(error => {
+        console.error('Error saving new model to Firebase:', error);
         // Note: Local state is already updated, Firebase save failed
         // You might want to show a notification to user here
       });
