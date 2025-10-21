@@ -115,7 +115,7 @@ export default function App() {
                       </button>
                     </>
                   )}
-                  {!selectedModelId && mainTab === 'models' && (
+                  {mainTab === 'models' && (
                     <button
                       onClick={createNewModel}
                       className="flex items-center bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow transition-colors duration-200"
