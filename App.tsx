@@ -23,6 +23,7 @@ export default function App() {
   const loadData = useModelStore((state) => state.loadData);
   const toggleDarkMode = useModelStore((state) => state.toggleDarkMode);
   const createNewModel = useModelStore((state) => state.createNewModel);
+  const saveCurrentModel = useModelStore((state) => state.saveCurrentModel);
   const selectedModelId = useModelStore((state) => state.selectedModelId);
 
   // Estado para las pestañas principales
@@ -49,14 +50,26 @@ export default function App() {
     }
   }, [isDarkMode, isLoading]);
   
-  const handleSave = () => {
+  const handleSave = async () => {
     // In a real application, this would send the data to a backend API
     if (!selectedModel) {
       alert("Selecciona un modelo primero");
       return;
     }
-    console.log("Guardando modelo:", JSON.stringify(selectedModel, null, 2));
-    alert("Modelo listo para ser enviado al backend. Revisa la consola para ver el JSON.");
+    console.log("🖲️ BOTÓN GUARDAR PRESIONADO - Modelo actual:", {
+      id: selectedModel.id,
+      moldCode: selectedModel.header?.moldCode,
+      client: selectedModel.header?.client,
+      color: selectedModel.header?.color
+    });
+
+    // Guardar manualmente en Firebase
+    const success = await saveCurrentModel();
+    if (success) {
+      alert("✅ Modelo guardado correctamente en Firebase.");
+    } else {
+      alert("❌ Error al guardar el modelo. Revisa la consola.");
+    }
   };
 
   // Show loading screen while data is being loaded

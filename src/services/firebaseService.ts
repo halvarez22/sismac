@@ -44,9 +44,13 @@ export const modelService = {
     try {
       const q = query(collection(db, COLLECTIONS.MODELS), orderBy('header.date', 'desc'));
       const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => doc.data() as Model);
+      console.log('🔥 DOCUMENTOS ENCONTRADOS EN FIREBASE:', querySnapshot.docs.length);
+
+      const models = querySnapshot.docs.map(doc => doc.data() as Model);
+      console.log('🔥 MODELOS PROCESADOS:', models.length);
+      return models;
     } catch (error) {
-      console.error('Error getting models from Firebase:', error);
+      console.error('❌ Error getting models from Firebase:', error);
       return [];
     }
   },

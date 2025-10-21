@@ -8,6 +8,11 @@ import type { ParsedExcelData } from '../types';
 
 export default function ExcelImporter() {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const createNewModel = useModelStore((state) => state.createNewModel);
+  const setHeaderField = useModelStore((state) => state.setHeaderField);
+  const selectedModel = useModelStore((state) =>
+    state.selectedModelId === null ? null : state.models.find(m => m.id === state.selectedModelId) || null
+  );
   const [isLoading, setIsLoading] = useState(false);
   const loadFromExcel = useModelStore((state) => state.loadFromExcel);
 
@@ -18,9 +23,11 @@ export default function ExcelImporter() {
     // Initialize parsed info
     const parsedInfo: any = {};
 
-    // Common patterns in file names
+    // Common patterns in file names - more flexible
     const patterns = {
       brand: /(VAZZA|COPPEL|WALMART|SORETTO|CAT|NIKE|ADIDAS|PUMA|OTHER_BRAND)/i,
+      // Capture everything between brand and "ESTILO" as product description
+      productDesc: /(?:VAZZA|COPPEL|WALMART|SORETTO|CAT|NIKE|ADIDAS|PUMA|OTHER_BRAND)\s+(.+?)\s+ESTILO/i,
       style: /ESTILO\s+(\d+[\d-]*)/i,
       color: /(BLANCO|NEGRO|ROJO|AZUL|VERDE|AMARILLO|GRIS|BEIGE|MARRON|ROSADO|VIOLETA|NARANJA|CAFE|BORDO|CREMA|LILA|FUCSIA|CORAL|BURDEOS|NAVY|INDIGO|OLIVA|MOSTAZA|TERRACOTA|SIENA|SALMON|PINK|PURPLE|ORANGE|BROWN|CREAM|LILAC|MAGENTA|CORAL|BURGUNDY)/i,
       quantity: /POR\s+(\d+)\s+PRS?/i,
@@ -32,6 +39,12 @@ export default function ExcelImporter() {
     const brandMatch = nameWithoutExt.match(patterns.brand);
     if (brandMatch) {
       parsedInfo.brand = brandMatch[1].toUpperCase();
+    }
+
+    // Extract product description (everything between brand and "ESTILO")
+    const productDescMatch = nameWithoutExt.match(patterns.productDesc);
+    if (productDescMatch) {
+      parsedInfo.productDescription = productDescMatch[1].trim();
     }
 
     const styleMatch = nameWithoutExt.match(patterns.style);
@@ -109,6 +122,7 @@ export default function ExcelImporter() {
       // Show extracted information from filename to user
       const extractedInfo = [];
       if (fileNameInfo.brand) extractedInfo.push(`Marca: ${fileNameInfo.brand}`);
+      if (fileNameInfo.productDescription) extractedInfo.push(`Producto: ${fileNameInfo.productDescription}`);
       if (fileNameInfo.styleCode) extractedInfo.push(`Estilo: ${fileNameInfo.styleCode}`);
       if (fileNameInfo.color) extractedInfo.push(`Color: ${fileNameInfo.color}`);
       if (fileNameInfo.quantity) extractedInfo.push(`Cantidad: ${fileNameInfo.quantity} pares`);

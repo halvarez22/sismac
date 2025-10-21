@@ -16,6 +16,7 @@ interface ModelState {
   selectedModelId: string | null;
   isDarkMode: boolean;
   isLoading: boolean;
+  hasUnsavedChanges: boolean;
   // Production module state
   productionOrders: ProductionOrder[];
   productionLines: ProductionLine[];
@@ -66,10 +67,12 @@ interface ModelState {
 
 // Helper function to save model to Firebase
 const saveModelToFirebase = async (model: Model) => {
+  console.log('💾 EJECUTANDO saveModelToFirebase para modelo:', model.id);
   try {
     await modelService.saveModel(model);
+    console.log('✅ Modelo guardado exitosamente en Firebase:', model.id);
   } catch (error) {
-    console.error('Error saving model to Firebase:', error);
+    console.error('❌ Error saving model to Firebase:', error);
     // Don't throw error to avoid blocking UI
   }
 };
@@ -239,6 +242,8 @@ export const useModelStore = createWithEqualityFn<ModelState & { isLoading: bool
         const savedDarkMode = await userSettingsService.getSetting('darkMode');
         const isDarkMode = savedDarkMode !== null ? savedDarkMode : false;
 
+        console.log('🔥 CARGANDO DATOS INICIALES DESDE FIREBASE...');
+
         // Load all data in parallel
         const [models, orders, lines, batches, checks] = await Promise.all([
           modelService.getAllModels(),
@@ -248,12 +253,18 @@ export const useModelStore = createWithEqualityFn<ModelState & { isLoading: bool
           qualityCheckService.getAllChecks()
         ]);
 
+        console.log('🔥 MODELOS CARGADOS DESDE FIREBASE:', models.length);
+
         // Apply dark mode
         if (isDarkMode) {
           document.documentElement.classList.add('dark');
         } else {
           document.documentElement.classList.remove('dark');
         }
+
+        // Don't auto-select models on load - let user choose from the list
+        // This ensures the app shows the models list instead of jumping to edit mode
+        const selectedModelId = null; // Always start with no model selected
 
         set({
           models: models.length > 0 ? models : [createNewModel()],
@@ -262,8 +273,12 @@ export const useModelStore = createWithEqualityFn<ModelState & { isLoading: bool
           productionBatches: batches,
           qualityChecks: checks,
           isDarkMode,
-          isLoading: false
+          isLoading: false,
+          selectedModelId: selectedModelId,
+          hasUnsavedChanges: false
         });
+
+        console.log('🔥 DATOS CARGADOS COMPLETAMENTE. Modelo seleccionado:', selectedModelId);
       } catch (error) {
         console.error('Error loading data:', error);
         // Fallback to local data if Firebase fails
@@ -271,7 +286,8 @@ export const useModelStore = createWithEqualityFn<ModelState & { isLoading: bool
         set({
           models: [createNewModel()],
           isDarkMode: savedDarkMode,
-          isLoading: false
+          isLoading: false,
+          hasUnsavedChanges: false
         });
       }
     },
@@ -310,6 +326,31 @@ export const useModelStore = createWithEqualityFn<ModelState & { isLoading: bool
       selectedModelId: modelId,
     })),
 
+    // Función para guardar manualmente el modelo seleccionado
+    saveCurrentModel: async () => {
+      const state = get();
+      if (state.selectedModelId === null) {
+        console.log('❌ No hay modelo seleccionado para guardar');
+        return false;
+      }
+
+      const currentModel = state.models.find(m => m.id === state.selectedModelId);
+      if (currentModel) {
+        console.log('💾 GUARDANDO MANUALMENTE MODELO SELECCIONADO:', currentModel.id);
+        try {
+          await modelService.saveModel(currentModel);
+          console.log('✅ Modelo guardado exitosamente');
+          // Resetear el flag de cambios sin guardar
+          set({ hasUnsavedChanges: false });
+          return true;
+        } catch (error) {
+          console.error('❌ Error guardando modelo:', error);
+          return false;
+        }
+      }
+      return false;
+    },
+
     deleteModel: (modelId) => {
       // First update the local state synchronously
       set((state) => ({
@@ -327,7 +368,9 @@ export const useModelStore = createWithEqualityFn<ModelState & { isLoading: bool
 
            // Current model operations (work on selected model)
            setHeaderField: (field, value) => set((state) => {
-             if (state.selectedModelId === null) return state;
+             if (state.selectedModelId === null) {
+               return state;
+             }
 
       const updatedModels = state.models.map(model =>
         model.id === state.selectedModelId
@@ -338,13 +381,18 @@ export const useModelStore = createWithEqualityFn<ModelState & { isLoading: bool
           : model
       );
 
-      // Save to Firebase asynchronously
+      // Marcar que hay cambios sin guardar
+      const hasUnsavedChanges = !['moldCode', 'client', 'color', 'requestedPairs', 'designer', 'season'].includes(field);
+
+      // Guardar inmediatamente en Firebase para campos críticos
       const updatedModel = updatedModels.find(m => m.id === state.selectedModelId);
-      if (updatedModel) {
+      if (updatedModel && ['moldCode', 'client', 'color', 'requestedPairs', 'designer', 'season'].includes(field)) {
+        console.log(`💾 Guardando campo ${field} en Firebase inmediatamente...`);
+        // Guardar inmediatamente sin delay para campos críticos
         saveModelToFirebase(updatedModel);
       }
 
-      return { models: updatedModels };
+      return { models: updatedModels, hasUnsavedChanges };
     }),
 
            addMaterial: () => set((state) => {
@@ -428,27 +476,58 @@ export const useModelStore = createWithEqualityFn<ModelState & { isLoading: bool
     }),
 
            loadFromExcel: (data) => set((state) => {
-             if (state.selectedModelId === null) return state;
+             console.log('📊 CARGANDO DATOS DESDE EXCEL:', data);
 
-      const newMaterials = data.materials.map(m => ({
-        ...createNewMaterial(),
-        ...m,
-        id: uuidv4(),
-      }));
+             let newModels = [...state.models];
+             let newSelectedModelId = state.selectedModelId;
 
-      return {
-        models: state.models.map(model =>
-          model.id === state.selectedModelId
-            ? {
-                ...model,
-                header: { ...model.header, ...data.header },
-                materials: newMaterials.length > 0 ? newMaterials : [createNewMaterial()],
-                images: [...model.images, ...data.images],
-              }
-            : model
-        ),
-      };
-    }),
+             // Si no hay modelo seleccionado, crear uno nuevo
+             if (state.selectedModelId === null) {
+               console.log('📝 No hay modelo seleccionado, creando uno nuevo...');
+               const newModel = createNewModel();
+               newModels.push(newModel);
+               newSelectedModelId = newModel.id;
+             }
+
+             const targetModelId = newSelectedModelId || state.selectedModelId;
+             console.log('🎯 Aplicando datos al modelo:', targetModelId);
+
+             const newMaterials = data.materials.map(m => ({
+               ...createNewMaterial(),
+               ...m,
+               id: uuidv4(),
+             }));
+
+             const updatedModels = newModels.map(model =>
+               model.id === targetModelId
+                 ? {
+                     ...model,
+                     header: { ...model.header, ...data.header },
+                     materials: newMaterials.length > 0 ? newMaterials : [createNewMaterial()],
+                     images: [...model.images, ...data.images],
+                   }
+                 : model
+             );
+
+             console.log('✅ Datos aplicados exitosamente al modelo');
+
+             // Guardar inmediatamente en Firebase después de importar Excel
+             const modelToSave = updatedModels.find(m => m.id === targetModelId);
+             if (modelToSave) {
+               console.log('💾 Guardando modelo importado en Firebase...');
+               // Forzar guardado síncrono para importación
+               modelService.saveModel(modelToSave).then(() => {
+                 console.log('✅ Modelo importado guardado exitosamente');
+               }).catch(error => {
+                 console.error('❌ Error guardando modelo importado:', error);
+               });
+             }
+
+             return {
+               models: updatedModels,
+               selectedModelId: newSelectedModelId
+             };
+           }),
 
     toggleDarkMode: () => set(async (state) => {
       const newDarkMode = !state.isDarkMode;
