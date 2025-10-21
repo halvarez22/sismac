@@ -11,14 +11,69 @@ export default function ExcelImporter() {
   const [isLoading, setIsLoading] = useState(false);
   const loadFromExcel = useModelStore((state) => state.loadFromExcel);
 
+  const parseFileName = (fileName: string) => {
+    // Remove extension
+    const nameWithoutExt = fileName.replace(/\.xlsx?$/, '');
+
+    // Initialize parsed info
+    const parsedInfo: any = {};
+
+    // Common patterns in file names
+    const patterns = {
+      brand: /(VAZZA|COPPEL|WALMART|SORETTO|CAT|NIKE|ADIDAS|PUMA|OTHER_BRAND)/i,
+      style: /ESTILO\s+(\d+[\d-]*)/i,
+      color: /(BLANCO|NEGRO|ROJO|AZUL|VERDE|AMARILLO|GRIS|BEIGE|MARRON|ROSADO|VIOLETA|NARANJA|CAFE|BORDO|CREMA|LILA|FUCSIA|CORAL|BURDEOS|NAVY|INDIGO|OLIVA|MOSTAZA|TERRACOTA|SIENA|SALMON|PINK|PURPLE|ORANGE|BROWN|CREAM|LILAC|MAGENTA|CORAL|BURGUNDY)/i,
+      quantity: /POR\s+(\d+)\s+PRS?/i,
+      component: /(HORMA|PLANTA|SUELA|TACON|FORRO|EMPEINE|CUÑA|PLATAFORMA|CORTE|COSTURA|BORDADO|ESTAMPADO)/i,
+      baseStyle: /BASE\s+DEL?\s+ESTILO\s+([\d\s-]+[\d-]*)/i
+    };
+
+    // Extract information using patterns
+    const brandMatch = nameWithoutExt.match(patterns.brand);
+    if (brandMatch) {
+      parsedInfo.brand = brandMatch[1].toUpperCase();
+    }
+
+    const styleMatch = nameWithoutExt.match(patterns.style);
+    if (styleMatch) {
+      parsedInfo.styleCode = styleMatch[1];
+    }
+
+    const colorMatch = nameWithoutExt.match(patterns.color);
+    if (colorMatch) {
+      parsedInfo.color = colorMatch[1].toUpperCase();
+    }
+
+    const quantityMatch = nameWithoutExt.match(patterns.quantity);
+    if (quantityMatch) {
+      parsedInfo.quantity = parseInt(quantityMatch[1]);
+    }
+
+    const componentMatch = nameWithoutExt.match(patterns.component);
+    if (componentMatch) {
+      parsedInfo.component = componentMatch[1].toUpperCase();
+    }
+
+    const baseStyleMatch = nameWithoutExt.match(patterns.baseStyle);
+    if (baseStyleMatch) {
+      parsedInfo.baseStyle = baseStyleMatch[1];
+    }
+
+    return parsedInfo;
+  };
+
   const handleFileImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     setIsLoading(true);
     try {
+      // Parse file name for additional information
+      const fileNameInfo = parseFileName(file.name);
+      console.log('Parsed file name info:', fileNameInfo);
+
       const data = await file.arrayBuffer();
-      
+
       const parsedData: ParsedExcelData = {
         header: {},
         materials: [],
@@ -34,12 +89,37 @@ export default function ExcelImporter() {
       // Assuming a specific structure
       // Header data in specific cells
       // FIX: Explicitly cast excel values to the correct types to prevent assignment errors.
-      parsedData.header.moldCode = String(worksheet['B2']?.v || '');
-      parsedData.header.client = String(worksheet['B3']?.v || '');
-      parsedData.header.color = String(worksheet['B4']?.v || '');
-      parsedData.header.requestedPairs = Number(worksheet['F2']?.v || 0);
-      parsedData.header.designer = String(worksheet['F3']?.v || '');
-      parsedData.header.week = Number(worksheet['F4']?.v || 0);
+
+      // First, get data from Excel cells
+      const excelMoldCode = String(worksheet['B2']?.v || '');
+      const excelClient = String(worksheet['B3']?.v || '');
+      const excelColor = String(worksheet['B4']?.v || '');
+      const excelRequestedPairs = Number(worksheet['F2']?.v || 0);
+      const excelDesigner = String(worksheet['F3']?.v || '');
+      const excelWeek = Number(worksheet['F4']?.v || 0);
+
+      // Override with file name information if available (file name takes precedence)
+      parsedData.header.moldCode = fileNameInfo.styleCode || excelMoldCode;
+      parsedData.header.client = fileNameInfo.brand || excelClient;
+      parsedData.header.color = fileNameInfo.color || excelColor;
+      parsedData.header.requestedPairs = fileNameInfo.quantity || excelRequestedPairs;
+      parsedData.header.designer = excelDesigner;
+      parsedData.header.week = excelWeek;
+
+      // Show extracted information from filename to user
+      const extractedInfo = [];
+      if (fileNameInfo.brand) extractedInfo.push(`Marca: ${fileNameInfo.brand}`);
+      if (fileNameInfo.styleCode) extractedInfo.push(`Estilo: ${fileNameInfo.styleCode}`);
+      if (fileNameInfo.color) extractedInfo.push(`Color: ${fileNameInfo.color}`);
+      if (fileNameInfo.quantity) extractedInfo.push(`Cantidad: ${fileNameInfo.quantity} pares`);
+      if (fileNameInfo.component) extractedInfo.push(`Componente: ${fileNameInfo.component}`);
+      if (fileNameInfo.baseStyle) extractedInfo.push(`Base del estilo: ${fileNameInfo.baseStyle}`);
+
+      if (extractedInfo.length > 0) {
+        const message = `Información extraída del nombre del archivo:\n${extractedInfo.join('\n')}\n\nEsta información se ha aplicado automáticamente a los campos correspondientes.`;
+        alert(message);
+        console.log('Extracted file info:', extractedInfo);
+      }
 
       // Materials table starting from row 8 (index 7)
       const materialRows = json.slice(7);
