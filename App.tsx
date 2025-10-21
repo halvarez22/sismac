@@ -15,7 +15,9 @@ import { useCostCalculator } from './hooks/useCostCalculator';
 
 export default function App() {
   const models = useModelStore((state) => state.models);
-  const selectedModel = useModelStore((state) => state.getSelectedModel());
+  const selectedModel = useModelStore((state) =>
+    state.selectedModelId === null ? null : state.models.find(m => m.id === state.selectedModelId) || null
+  );
   const isDarkMode = useModelStore((state) => state.isDarkMode);
   const isLoading = useModelStore((state) => state.isLoading);
   const loadData = useModelStore((state) => state.loadData);
