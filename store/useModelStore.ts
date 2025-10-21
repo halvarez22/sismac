@@ -248,6 +248,8 @@ export const useModelStore = createWithEqualityFn<ModelState & { isLoading: bool
           qualityCheckService.getAllChecks()
         ]);
 
+        console.log('Loaded models from Firebase:', models.length, models.map(m => ({id: m.id, type: typeof m.id})));
+
         // Apply dark mode
         if (isDarkMode) {
           document.documentElement.classList.add('dark');
@@ -314,20 +316,31 @@ export const useModelStore = createWithEqualityFn<ModelState & { isLoading: bool
     })),
 
     deleteModel: (modelId) => set(async (state) => {
-      console.log('Deleting model:', modelId, 'Current selected:', state.selectedModelId);
+      console.log('Deleting model:', modelId, 'Type:', typeof modelId);
+      console.log('Current models before filter:', state.models.map(m => ({id: m.id, type: typeof m.id})));
+      console.log('Current selected:', state.selectedModelId, 'Type:', typeof state.selectedModelId);
+
+      const filteredModels = state.models.filter(m => {
+        const match = m.id !== modelId;
+        console.log(`Comparing ${m.id} (${typeof m.id}) !== ${modelId} (${typeof modelId}) = ${match}`);
+        return match;
+      });
+
+      console.log('Filtered models count:', filteredModels.length, 'Original count:', state.models.length);
+
       try {
         await modelService.deleteModel(modelId);
         const newState = {
-          models: state.models.filter(m => m.id !== modelId),
+          models: filteredModels,
           selectedModelId: state.selectedModelId === modelId ? null : state.selectedModelId,
         };
-        console.log('Model deleted, new state:', newState);
+        console.log('Model deleted from Firebase, final state:', newState);
         return newState;
       } catch (error) {
-        console.error('Error deleting model:', error);
+        console.error('Error deleting model from Firebase:', error);
         // Still update local state even if Firebase fails
         const newState = {
-          models: state.models.filter(m => m.id !== modelId),
+          models: filteredModels,
           selectedModelId: state.selectedModelId === modelId ? null : state.selectedModelId,
         };
         console.log('Fallback delete state:', newState);
