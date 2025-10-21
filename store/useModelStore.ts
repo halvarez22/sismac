@@ -248,8 +248,6 @@ export const useModelStore = createWithEqualityFn<ModelState & { isLoading: bool
           qualityCheckService.getAllChecks()
         ]);
 
-        console.log('Loaded models from Firebase:', models.length, models.map(m => ({id: m.id, type: typeof m.id})));
-
         // Apply dark mode
         if (isDarkMode) {
           document.documentElement.classList.add('dark');
@@ -286,67 +284,46 @@ export const useModelStore = createWithEqualityFn<ModelState & { isLoading: bool
            },
 
     // Model management
-    createNewModel: () => set(async (state) => {
-      console.log('Creating new model...');
-      const newModel = createNewModel();
-      console.log('New model created:', newModel.id);
-      try {
-        await modelService.saveModel(newModel);
-        console.log('Model saved to Firebase, updating state...');
-        const newState = {
+    createNewModel: () => {
+      // First update the local state synchronously
+      set((state) => {
+        const newModel = createNewModel();
+        return {
           models: [...state.models, newModel],
           selectedModelId: newModel.id  // Seleccionar automáticamente el nuevo modelo
         };
-        console.log('New state:', newState);
-        return newState;
-      } catch (error) {
-        console.error('Error creating model:', error);
-        // Still update local state even if Firebase fails
-        const newState = {
-          models: [...state.models, newModel],
-          selectedModelId: newModel.id  // Seleccionar automáticamente el nuevo modelo
-        };
-        console.log('Fallback state update:', newState);
-        return newState;
-      }
-    }),
+      });
+
+      // Get the current state to save the newly created model
+      const currentState = get();
+      const newModelToSave = currentState.models[currentState.models.length - 1];
+
+      // Then save to Firebase asynchronously (don't block UI)
+      modelService.saveModel(newModelToSave).catch(error => {
+        console.error('Error saving new model to Firebase:', error);
+        // Note: Local state is already updated, Firebase save failed
+        // You might want to show a notification to user here
+      });
+    },
 
     selectModel: (modelId: string | null) => set(() => ({
       selectedModelId: modelId,
     })),
 
-    deleteModel: (modelId) => set(async (state) => {
-      console.log('Deleting model:', modelId, 'Type:', typeof modelId);
-      console.log('Current models before filter:', state.models.map(m => ({id: m.id, type: typeof m.id})));
-      console.log('Current selected:', state.selectedModelId, 'Type:', typeof state.selectedModelId);
+    deleteModel: (modelId) => {
+      // First update the local state synchronously
+      set((state) => ({
+        models: state.models.filter(m => m.id !== modelId),
+        selectedModelId: state.selectedModelId === modelId ? null : state.selectedModelId,
+      }));
 
-      const filteredModels = state.models.filter(m => {
-        const match = m.id !== modelId;
-        console.log(`Comparing ${m.id} (${typeof m.id}) !== ${modelId} (${typeof modelId}) = ${match}`);
-        return match;
-      });
-
-      console.log('Filtered models count:', filteredModels.length, 'Original count:', state.models.length);
-
-      try {
-        await modelService.deleteModel(modelId);
-        const newState = {
-          models: filteredModels,
-          selectedModelId: state.selectedModelId === modelId ? null : state.selectedModelId,
-        };
-        console.log('Model deleted from Firebase, final state:', newState);
-        return newState;
-      } catch (error) {
+      // Then delete from Firebase asynchronously (don't block UI)
+      modelService.deleteModel(modelId).catch(error => {
         console.error('Error deleting model from Firebase:', error);
-        // Still update local state even if Firebase fails
-        const newState = {
-          models: filteredModels,
-          selectedModelId: state.selectedModelId === modelId ? null : state.selectedModelId,
-        };
-        console.log('Fallback delete state:', newState);
-        return newState;
-      }
-    }),
+        // Note: Local state is already updated, Firebase deletion failed
+        // You might want to show a notification to user here
+      });
+    },
 
            // Current model operations (work on selected model)
            setHeaderField: (field, value) => set((state) => {
