@@ -1,0 +1,5 @@
+{
+  "name": "Catálogo de Modelos y Explosión de Materiales",
+  "description": "Una aplicación web para registrar modelos de calzado con su explosión detallada de materiales, imágenes asociadas y cálculo automático de costos. Permite la importación desde Excel y la captura manual de datos.",
+  "requestFramePermissions": []
+}
