@@ -28,13 +28,19 @@ export const modelService = {
   // Guardar un modelo
   async saveModel(model: Model): Promise<void> {
     try {
+      console.log('🔥 SAVING TO FIREBASE - Full model:', JSON.stringify(model, null, 2));
       const docRef = doc(db, COLLECTIONS.MODELS, model.id);
-      await setDoc(docRef, {
+
+      const dataToSave = {
         ...model,
         updatedAt: Timestamp.now()
-      });
+      };
+
+      console.log('🔥 SAVING TO FIREBASE - Data to save:', JSON.stringify(dataToSave, null, 2));
+      await setDoc(docRef, dataToSave);
+      console.log('🔥 MODEL SAVED TO FIREBASE SUCCESSFULLY');
     } catch (error) {
-      console.error('Error saving model:', error);
+      console.error('❌ Error saving model to Firebase:', error);
       throw error;
     }
   },
@@ -44,9 +50,19 @@ export const modelService = {
     try {
       const q = query(collection(db, COLLECTIONS.MODELS), orderBy('header.date', 'desc'));
       const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => doc.data() as Model);
+
+      console.log('🔥 LOADING FROM FIREBASE - Documents found:', querySnapshot.docs.length);
+
+      const models = querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        console.log('🔥 LOADING FROM FIREBASE - Raw doc data:', JSON.stringify(data, null, 2));
+        return data as Model;
+      });
+
+      console.log('🔥 LOADING FROM FIREBASE - Final models array:', models.length);
+      return models;
     } catch (error) {
-      console.error('Error getting models:', error);
+      console.error('❌ Error getting models from Firebase:', error);
       return [];
     }
   },
