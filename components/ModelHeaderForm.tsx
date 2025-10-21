@@ -34,7 +34,9 @@ function FormInput<T>({ label, field, value, type, onChange }: {
 
 
 export default function ModelHeaderForm() {
-    const selectedModel = useModelStore((state) => state.getSelectedModel());
+    const selectedModel = useModelStore((state) =>
+        state.selectedModelId === null ? null : state.models.find(m => m.id === state.selectedModelId) || null
+    );
     const setHeaderField = useModelStore((state) => state.setHeaderField);
 
     // Si no hay modelo seleccionado, mostrar mensaje

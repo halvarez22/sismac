@@ -5,7 +5,9 @@ import type { Material } from '../types';
 import { PlusCircle, Trash2 } from 'lucide-react';
 
 export default function MaterialsTable() {
-  const selectedModel = useModelStore((state) => state.getSelectedModel());
+  const selectedModel = useModelStore((state) =>
+    state.selectedModelId === null ? null : state.models.find(m => m.id === state.selectedModelId) || null
+  );
   const addMaterial = useModelStore((state) => state.addMaterial);
   const updateMaterial = useModelStore((state) => state.updateMaterial);
   const removeMaterial = useModelStore((state) => state.removeMaterial);

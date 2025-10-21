@@ -4,7 +4,9 @@ import { useModelStore } from '../store/useModelStore';
 import { UploadCloud, XCircle } from 'lucide-react';
 
 export default function ImageUploader() {
-  const selectedModel = useModelStore((state) => state.getSelectedModel());
+  const selectedModel = useModelStore((state) =>
+    state.selectedModelId === null ? null : state.models.find(m => m.id === state.selectedModelId) || null
+  );
   const addImages = useModelStore((state) => state.addImages);
   const removeImage = useModelStore((state) => state.removeImage);
 

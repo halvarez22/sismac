@@ -32,7 +32,9 @@ function EditableSummaryRow({ label, value, onChange }: { label: string; value: 
 }
 
 export default function CostSummary() {
-  const selectedModel = useModelStore((state) => state.getSelectedModel());
+  const selectedModel = useModelStore((state) =>
+    state.selectedModelId === null ? null : state.models.find(m => m.id === state.selectedModelId) || null
+  );
   const setFinancials = useModelStore((state) => state.setFinancials);
 
   // Si no hay modelo seleccionado, mostrar mensaje

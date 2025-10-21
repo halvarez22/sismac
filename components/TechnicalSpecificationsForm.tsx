@@ -4,7 +4,9 @@ import type { TechnicalSpecifications } from '../types';
 import { Ruler, Weight, Shield, TestTube, Package, Heart } from 'lucide-react';
 
 export default function TechnicalSpecificationsForm() {
-  const selectedModel = useModelStore((state) => state.getSelectedModel());
+  const selectedModel = useModelStore((state) =>
+    state.selectedModelId === null ? null : state.models.find(m => m.id === state.selectedModelId) || null
+  );
   const updateTechnicalSpecifications = useModelStore((state) => state.updateTechnicalSpecifications);
 
   // Si no hay modelo seleccionado, mostrar mensaje

@@ -4,7 +4,9 @@ import type { ProductionOperation } from '../types';
 import { PlusCircle, Trash2, Clock, Settings, Users } from 'lucide-react';
 
 export default function ProductionRouteForm() {
-  const selectedModel = useModelStore((state) => state.getSelectedModel());
+  const selectedModel = useModelStore((state) =>
+    state.selectedModelId === null ? null : state.models.find(m => m.id === state.selectedModelId) || null
+  );
   const updateProductionRoute = useModelStore((state) => state.updateProductionRoute);
   const addProductionOperation = useModelStore((state) => state.addProductionOperation);
   const updateProductionOperation = useModelStore((state) => state.updateProductionOperation);
