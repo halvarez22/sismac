@@ -285,20 +285,27 @@ export const useModelStore = createWithEqualityFn<ModelState & { isLoading: bool
 
     // Model management
     createNewModel: () => set(async (state) => {
+      console.log('Creating new model...');
       const newModel = createNewModel();
+      console.log('New model created:', newModel.id);
       try {
         await modelService.saveModel(newModel);
-        return {
+        console.log('Model saved to Firebase, updating state...');
+        const newState = {
           models: [...state.models, newModel],
           selectedModelId: newModel.id  // Seleccionar automáticamente el nuevo modelo
         };
+        console.log('New state:', newState);
+        return newState;
       } catch (error) {
         console.error('Error creating model:', error);
         // Still update local state even if Firebase fails
-        return {
+        const newState = {
           models: [...state.models, newModel],
           selectedModelId: newModel.id  // Seleccionar automáticamente el nuevo modelo
         };
+        console.log('Fallback state update:', newState);
+        return newState;
       }
     }),
 
@@ -307,19 +314,24 @@ export const useModelStore = createWithEqualityFn<ModelState & { isLoading: bool
     })),
 
     deleteModel: (modelId) => set(async (state) => {
+      console.log('Deleting model:', modelId, 'Current selected:', state.selectedModelId);
       try {
         await modelService.deleteModel(modelId);
-        return {
+        const newState = {
           models: state.models.filter(m => m.id !== modelId),
           selectedModelId: state.selectedModelId === modelId ? null : state.selectedModelId,
         };
+        console.log('Model deleted, new state:', newState);
+        return newState;
       } catch (error) {
         console.error('Error deleting model:', error);
         // Still update local state even if Firebase fails
-        return {
+        const newState = {
           models: state.models.filter(m => m.id !== modelId),
           selectedModelId: state.selectedModelId === modelId ? null : state.selectedModelId,
         };
+        console.log('Fallback delete state:', newState);
+        return newState;
       }
     }),
 
