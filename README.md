@@ -150,3 +150,7 @@ Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) par
 **Desarrollado con ❤️ para la industria del calzado**
 
 *¿Necesitas ayuda? Revisa la documentación o abre un issue en GitHub.*
+
+---
+
+**Última actualización: $(date)** - SISMAC v1.0 - Listo para producción
