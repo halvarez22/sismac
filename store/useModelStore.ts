@@ -288,11 +288,17 @@ export const useModelStore = createWithEqualityFn<ModelState & { isLoading: bool
       const newModel = createNewModel();
       try {
         await modelService.saveModel(newModel);
-        return { models: [...state.models, newModel] };
+        return {
+          models: [...state.models, newModel],
+          selectedModelId: newModel.id  // Seleccionar automáticamente el nuevo modelo
+        };
       } catch (error) {
         console.error('Error creating model:', error);
         // Still update local state even if Firebase fails
-        return { models: [...state.models, newModel] };
+        return {
+          models: [...state.models, newModel],
+          selectedModelId: newModel.id  // Seleccionar automáticamente el nuevo modelo
+        };
       }
     }),
 
