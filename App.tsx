@@ -258,14 +258,23 @@ export default function App() {
                     )}
 
                     {engineeringTab === 'materials' && (
-                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        <div className="lg:col-span-2">
-                          <h2 className="text-xl font-semibold mb-6 text-gray-900 dark:text-gray-100">Explosión de Materiales</h2>
-                          <MaterialsTable />
+                      <div className="space-y-4">
+                        {/* Header con título y resumen compacto */}
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Explosión de Materiales</h2>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                              Gestiona los materiales y costos de tu modelo
+                            </p>
+                          </div>
+                          <div className="w-80">
+                            <CostSummary />
+                          </div>
                         </div>
-                        <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                          <h3 className="text-lg font-medium mb-4 text-gray-900 dark:text-gray-100">Resumen de Costos</h3>
-                          <CostSummary />
+
+                        {/* Tabla de materiales a pantalla completa */}
+                        <div className="w-full">
+                          <MaterialsTable />
                         </div>
                       </div>
                     )}

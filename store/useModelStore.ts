@@ -81,6 +81,7 @@ const createNewMaterial = (): Material => ({
   id: uuidv4(),
   description: '',
   technicalName: '',
+  color: '',
   provider: '',
   priceWithoutVAT: 0,
   netPrice: 0,
@@ -91,11 +92,13 @@ const createNewMaterial = (): Material => ({
   requiredToBuy: 0,
   costPerPair: 0,
   totalBudget: 0,
+  minimumOrder: 0,
+  oc: false,
+  comprado: false,
   // Nuevos campos técnicos
   materialType: 'upper' as const,
   specifications: '',
   alternativeProviders: [],
-  minimumOrder: 0,
   leadTime: 0,
 });
 
@@ -220,11 +223,12 @@ const initialState = {
   models: [],
   selectedModelId: null,
   isDarkMode: false,
+  isLoading: true,
+  hasUnsavedChanges: false,
   productionOrders: [],
   productionLines: [],
   productionBatches: [],
-  qualityChecks: [],
-  isLoading: true
+  qualityChecks: []
 };
 
 // FIX: Using createWithEqualityFn with shallow comparison to prevent infinite loops
@@ -529,8 +533,8 @@ export const useModelStore = createWithEqualityFn<ModelState & { isLoading: bool
              };
            }),
 
-    toggleDarkMode: () => set(async (state) => {
-      const newDarkMode = !state.isDarkMode;
+    toggleDarkMode: () => {
+      const newDarkMode = !get().isDarkMode;
 
       // Aplicar la clase al elemento html para que Tailwind funcione
       if (newDarkMode) {
@@ -539,15 +543,16 @@ export const useModelStore = createWithEqualityFn<ModelState & { isLoading: bool
         document.documentElement.classList.remove('dark');
       }
 
+      // Update state synchronously
+      set({ isDarkMode: newDarkMode });
+
       // Save to Firebase (async, don't wait)
       userSettingsService.saveSetting('darkMode', newDarkMode).catch(error => {
         console.error('Error saving dark mode to Firebase:', error);
         // Fallback to localStorage
         localStorage.setItem('darkMode', JSON.stringify(newDarkMode));
       });
-
-      return { isDarkMode: newDarkMode };
-    }),
+    },
 
     // Nuevas funcionalidades de ingeniería
     updateProductionRoute: (route) => set((state) => {
