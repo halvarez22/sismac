@@ -21,6 +21,7 @@ export interface Material {
   id: string; // Unique ID for each material row
   description: string;
   technicalName: string;
+  color: string; // Color del material
   provider: string;
   priceWithoutVAT: number;
   netPrice: number;
@@ -31,11 +32,13 @@ export interface Material {
   requiredToBuy: number;
   costPerPair: number;
   totalBudget: number;
+  minimumOrder: number; // Pedido mínimo / Unidad orden de compra
+  oc: boolean; // Orden de Compra
+  comprado: boolean; // Estado de compra
   // Nuevos campos técnicos
   materialType: 'upper' | 'sole' | 'lining' | 'insole' | 'heel' | 'accessory' | 'packaging'; // Tipo de material
   specifications: string; // Especificaciones técnicas
   alternativeProviders: string[]; // Proveedores alternativos
-  minimumOrder: number; // Pedido mínimo
   leadTime: number; // Tiempo de entrega en días
 }
 

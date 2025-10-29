@@ -37,7 +37,12 @@ export default function ProductionModule() {
     createProductionBatch,
     updateProductionBatch,
     deleteProductionBatch,
-    addQualityCheck
+    addQualityCheck,
+    getCapacityVsDemand,
+    getOperationEfficiency,
+    getCostPerHour,
+    getLineROI,
+    getBottlenecks
   } = useModelStore();
 
   const [activeTab, setActiveTab] = useState<'orders' | 'lines' | 'batches' | 'quality' | 'schedule' | 'reports'>('orders');
@@ -632,10 +637,10 @@ export default function ProductionModule() {
 
       {/* Métricas avanzadas */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Eficiencia por línea */}
+        {/* Capacidad vs Demanda */}
         <div className="bg-white dark:bg-gray-700 rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-            Eficiencia por Línea
+            Capacidad vs Demanda por Línea
           </h3>
           {productionLines.length === 0 ? (
             <div className="text-center py-8 text-gray-500 dark:text-gray-400">
@@ -644,22 +649,39 @@ export default function ProductionModule() {
             </div>
           ) : (
             <div className="space-y-3">
-              {productionLines.map(line => (
-                <div key={line.id} className="flex items-center justify-between">
+              {getCapacityVsDemand().map(line => (
+                <div key={line.lineId} className="flex items-center justify-between">
                   <div className="flex-1">
                     <div className="flex justify-between items-center mb-1">
                       <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                        {line.name}
+                        {line.lineName}
                       </span>
-                      <span className="text-sm text-gray-600 dark:text-gray-400">
-                        {line.efficiency}%
-                      </span>
+                      <div className="flex items-center space-x-2">
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          line.status === 'under' ? 'bg-blue-100 text-blue-800' :
+                          line.status === 'optimal' ? 'bg-green-100 text-green-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {line.status === 'under' ? 'Subutilizada' :
+                           line.status === 'optimal' ? 'Óptima' : 'Sobrecargada'}
+                        </span>
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                          {line.utilization}%
+                        </span>
+                      </div>
                     </div>
                     <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
                       <div
-                        className="bg-green-600 h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${line.efficiency}%` }}
+                        className={`h-2 rounded-full transition-all duration-300 ${
+                          line.status === 'under' ? 'bg-blue-600' :
+                          line.status === 'optimal' ? 'bg-green-600' :
+                          'bg-red-600'
+                        }`}
+                        style={{ width: `${Math.min(line.utilization, 100)}%` }}
                       ></div>
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      {line.demand} / {line.capacity} pares/semana
                     </div>
                   </div>
                 </div>
@@ -668,51 +690,51 @@ export default function ProductionModule() {
           )}
         </div>
 
-        {/* Estado de órdenes por prioridad */}
+        {/* Eficiencia por Operación */}
         <div className="bg-white dark:bg-gray-700 rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-            Órdenes por Prioridad
+            Eficiencia por Operación
           </h3>
-          <div className="space-y-4">
-            {['urgent', 'high', 'medium', 'low'].map(priority => {
-              const count = productionOrders.filter(o => o.priority === priority).length;
-              const percentage = productionOrders.length > 0 ? (count / productionOrders.length) * 100 : 0;
-
-              return (
-                <div key={priority} className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <div className={`w-3 h-3 rounded-full ${
-                      priority === 'urgent' ? 'bg-red-500' :
-                      priority === 'high' ? 'bg-orange-500' :
-                      priority === 'medium' ? 'bg-yellow-500' :
-                      'bg-green-500'
-                    }`}></div>
-                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100 capitalize">
-                      {priority === 'urgent' ? 'Urgente' :
-                       priority === 'high' ? 'Alta' :
-                       priority === 'medium' ? 'Media' : 'Baja'}
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {count}
-                    </span>
-                    <div className="w-16 bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+          {getOperationEfficiency().length === 0 ? (
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+              <BarChart3 className="h-12 w-12 mx-auto mb-2 opacity-50" />
+              <p>No hay datos de operaciones</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {getOperationEfficiency().slice(0, 5).map(op => (
+                <div key={op.operationId} className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                        {op.operationName || `Operación ${op.operationId.slice(-4)}`}
+                      </span>
+                      <span className={`text-sm ${
+                        op.efficiency >= 90 ? 'text-green-600' :
+                        op.efficiency >= 70 ? 'text-yellow-600' :
+                        'text-red-600'
+                      }`}>
+                        {op.efficiency}%
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
                       <div
                         className={`h-2 rounded-full transition-all duration-300 ${
-                          priority === 'urgent' ? 'bg-red-500' :
-                          priority === 'high' ? 'bg-orange-500' :
-                          priority === 'medium' ? 'bg-yellow-500' :
-                          'bg-green-500'
+                          op.efficiency >= 90 ? 'bg-green-600' :
+                          op.efficiency >= 70 ? 'bg-yellow-600' :
+                          'bg-red-600'
                         }`}
-                        style={{ width: `${percentage}%` }}
+                        style={{ width: `${Math.min(op.efficiency, 100)}%` }}
                       ></div>
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      {op.avgTime}min vs {op.targetTime}min objetivo
                     </div>
                   </div>
                 </div>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Producción semanal */}
@@ -752,59 +774,47 @@ export default function ProductionModule() {
           </div>
         </div>
 
-        {/* Alertas y problemas */}
+        {/* Cuellos de Botella y Alertas */}
         <div className="bg-white dark:bg-gray-700 rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-            Alertas de Producción
+            Cuellos de Botella y Alertas
           </h3>
           <div className="space-y-3">
-            {productionLines.filter(l => l.status === 'maintenance').length > 0 && (
-              <div className="flex items-center p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
-                <AlertTriangle className="h-5 w-5 text-yellow-600 mr-3" />
-                <div>
-                  <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
-                    Líneas en mantenimiento
+            {getBottlenecks().map((bottleneck, index) => (
+              <div key={index} className={`flex items-center p-3 border rounded-md ${
+                bottleneck.severity === 'high' ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800' :
+                bottleneck.severity === 'medium' ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800' :
+                'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
+              }`}>
+                <AlertTriangle className={`h-5 w-5 mr-3 ${
+                  bottleneck.severity === 'high' ? 'text-red-600' :
+                  bottleneck.severity === 'medium' ? 'text-yellow-600' :
+                  'text-blue-600'
+                }`} />
+                <div className="flex-1">
+                  <p className="text-sm font-medium">
+                    {bottleneck.type === 'line' ? 'Línea' : 'Operación'}: {bottleneck.name}
                   </p>
-                  <p className="text-xs text-yellow-700 dark:text-yellow-300">
-                    {productionLines.filter(l => l.status === 'maintenance').length} línea(s) requieren atención
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {qualityChecks.filter(q => q.status === 'fail').length > 10 && (
-              <div className="flex items-center p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
-                <XCircle className="h-5 w-5 text-red-600 mr-3" />
-                <div>
-                  <p className="text-sm font-medium text-red-800 dark:text-red-200">
-                    Alta tasa de defectos
-                  </p>
-                  <p className="text-xs text-red-700 dark:text-red-300">
-                    {qualityChecks.filter(q => q.status === 'fail').length} defectos detectados
+                  <p className="text-xs opacity-80">
+                    {bottleneck.description}
                   </p>
                 </div>
+                <span className={`text-xs px-2 py-1 rounded-full ${
+                  bottleneck.severity === 'high' ? 'bg-red-100 text-red-800' :
+                  bottleneck.severity === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                  'bg-blue-100 text-blue-800'
+                }`}>
+                  {bottleneck.severity === 'high' ? 'Crítico' :
+                   bottleneck.severity === 'medium' ? 'Medio' : 'Bajo'}
+                </span>
               </div>
-            )}
+            ))}
 
-            {productionOrders.filter(o => o.status === 'on_hold').length > 0 && (
-              <div className="flex items-center p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
-                <Pause className="h-5 w-5 text-blue-600 mr-3" />
-                <div>
-                  <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
-                    Órdenes en pausa
-                  </p>
-                  <p className="text-xs text-blue-700 dark:text-blue-300">
-                    {productionOrders.filter(o => o.status === 'on_hold').length} orden(es) esperando
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {productionOrders.length === 0 && productionLines.length === 0 && (
+            {getBottlenecks().length === 0 && (
               <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                 <CheckCircle className="h-12 w-12 mx-auto mb-2 opacity-50 text-green-500" />
-                <p className="text-sm">Sistema listo para configuración</p>
-                <p className="text-xs">Configure líneas y órdenes para comenzar la producción</p>
+                <p className="text-sm">Sin cuellos de botella detectados</p>
+                <p className="text-xs">La producción está funcionando eficientemente</p>
               </div>
             )}
           </div>
@@ -1295,7 +1305,7 @@ export default function ProductionModule() {
               </button>
             </div>
 
-            {/* Resumen Ejecutivo */}
+            {/* Resumen Ejecutivo con ROI */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="bg-white dark:bg-gray-700 rounded-lg shadow p-6">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
@@ -1325,6 +1335,31 @@ export default function ProductionModule() {
                         Math.round(productionLines.reduce((sum, line) => sum + line.efficiency, 0) / productionLines.length) : 0}%
                     </span>
                   </div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-gray-700 rounded-lg shadow p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                  ROI por Línea
+                </h3>
+                <div className="space-y-3">
+                  {getLineROI().map(line => (
+                    <div key={line.lineId} className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">{line.lineName}:</span>
+                      <span className={`text-sm font-medium ${
+                        line.roi > 20 ? 'text-green-600' :
+                        line.roi > 0 ? 'text-yellow-600' :
+                        'text-red-600'
+                      }`}>
+                        {line.roi > 0 ? '+' : ''}{line.roi}%
+                      </span>
+                    </div>
+                  ))}
+                  {getLineROI().length === 0 && (
+                    <div className="text-center py-4 text-gray-500 dark:text-gray-400">
+                      <p className="text-xs">No hay datos de ROI</p>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1361,24 +1396,25 @@ export default function ProductionModule() {
 
               <div className="bg-white dark:bg-gray-700 rounded-lg shadow p-6">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                  Producción por Línea
+                  Costo por Hora de Producción
                 </h3>
                 <div className="space-y-2">
-                  {productionLines.map(line => (
-                    <div key={line.id} className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">{line.name}:</span>
+                  {getCostPerHour().map(line => (
+                    <div key={line.lineId} className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">{line.lineName}:</span>
                       <div className="flex items-center space-x-2">
-                        <span className={`text-xs px-2 py-1 rounded-full ${
-                          line.status === 'active' ? 'bg-green-100 text-green-800' :
-                          line.status === 'maintenance' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
-                          {line.status}
+                        <span className="text-sm font-medium">${line.costPerHour}/h</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          ({line.hourlyCapacity} pares/h)
                         </span>
-                        <span className="text-sm font-medium">{line.efficiency}%</span>
                       </div>
                     </div>
                   ))}
+                  {getCostPerHour().length === 0 && (
+                    <div className="text-center py-4 text-gray-500 dark:text-gray-400">
+                      <p className="text-xs">No hay datos de costos</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
