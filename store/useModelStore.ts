@@ -63,6 +63,18 @@ interface ModelState {
   updateProductionBatch: (id: string, updates: Partial<ProductionBatch>) => void;
   deleteProductionBatch: (id: string) => void;
   addQualityCheck: (batchId: string, operationId: string, inspector: string, status: 'pass' | 'fail') => void;
+  // Production calculations
+  getCapacityVsDemand: () => { lineId: string; lineName: string; capacity: number; demand: number; utilization: number; status: 'under' | 'optimal' | 'overloaded' }[];
+  getOperationEfficiency: () => { operationId: string; operationName: string; efficiency: number; avgTime: number; targetTime: number }[];
+  getCostPerHour: () => { lineId: string; lineName: string; costPerHour: number; hourlyCapacity: number }[];
+  getLineROI: () => { lineId: string; lineName: string; roi: number; revenue: number; costs: number }[];
+  getBottlenecks: () => { type: 'line' | 'operation'; id: string; name: string; severity: 'low' | 'medium' | 'high'; description: string }[];
+  // Materials calculations
+  getSupplierAnalysis: () => { supplier: string; totalMaterials: number; avgPrice: number; avgLeadTime: number; qualityScore: number; totalValue: number; recommendation: 'preferred' | 'alternative' | 'avoid' }[];
+  getInventoryAlerts: () => { materialId: string; materialName: string; currentStock: number; requiredStock: number; status: 'critical' | 'low' | 'normal'; daysToDepletion: number }[];
+  getABCAnalysis: () => { materialId: string; materialName: string; annualConsumption: number; annualValue: number; category: 'A' | 'B' | 'C'; percentage: number }[];
+  getPurchaseRecommendations: () => { type: 'consolidate' | 'switch_supplier' | 'bulk_purchase' | 'emergency_order'; materials: string[]; savings: number; description: string; priority: 'high' | 'medium' | 'low' }[];
+  getPriceTrends: () => { materialId: string; materialName: string; currentPrice: number; avgPrice: number; trend: 'up' | 'down' | 'stable'; changePercent: number; supplier: string }[];
 }
 
 // Helper function to save model to Firebase
@@ -835,6 +847,403 @@ export const useModelStore = createWithEqualityFn<ModelState & { isLoading: bool
         qualityChecks: [...state.qualityChecks, newCheck],
       };
     }),
+
+    // Production calculations
+    getCapacityVsDemand: () => {
+      const state = get();
+      return state.productionLines.map(line => {
+        // Calcular demanda total asignada a esta línea
+        const assignedOrders = state.productionOrders.filter(order => order.assignedTo === line.id);
+        const totalDemand = assignedOrders.reduce((sum, order) => sum + order.quantity, 0);
+
+        // Calcular capacidad semanal (asumiendo 5 días laborales)
+        const weeklyCapacity = line.capacity * 5;
+
+        // Calcular utilización
+        const utilization = weeklyCapacity > 0 ? (totalDemand / weeklyCapacity) * 100 : 0;
+
+        // Determinar estado
+        let status: 'under' | 'optimal' | 'overloaded' = 'optimal';
+        if (utilization < 70) status = 'under';
+        else if (utilization > 110) status = 'overloaded';
+
+        return {
+          lineId: line.id,
+          lineName: line.name,
+          capacity: weeklyCapacity,
+          demand: totalDemand,
+          utilization: Math.round(utilization * 100) / 100,
+          status
+        };
+      });
+    },
+
+    getOperationEfficiency: () => {
+      const state = get();
+      const operationStats: { [key: string]: { totalTime: number; count: number; targetTime: number; name: string } } = {};
+
+      // Recopilar datos de operaciones completadas
+      state.productionBatches.forEach(batch => {
+        if (batch.status === 'completed') {
+          const order = state.productionOrders.find(o => o.id === batch.productionOrderId);
+          if (order) {
+            const model = state.models.find(m => m.id === order.modelId);
+            if (model) {
+              model.productionRoute.operations.forEach(op => {
+                if (!operationStats[op.id]) {
+                  operationStats[op.id] = {
+                    totalTime: 0,
+                    count: 0,
+                    targetTime: op.standardTime + op.setupTime,
+                    name: op.name
+                  };
+                }
+                // Simular tiempo real basado en eficiencia de línea
+                const line = state.productionLines.find(l => l.id === order.assignedTo);
+                const efficiency = line ? line.efficiency / 100 : 0.85;
+                const actualTime = (op.standardTime + op.setupTime) / efficiency;
+
+                operationStats[op.id].totalTime += actualTime;
+                operationStats[op.id].count += 1;
+              });
+            }
+          }
+        }
+      });
+
+      return Object.entries(operationStats).map(([operationId, stats]) => ({
+        operationId,
+        operationName: stats.name,
+        efficiency: stats.count > 0 ? Math.round((stats.targetTime / (stats.totalTime / stats.count)) * 100 * 100) / 100 : 0,
+        avgTime: stats.count > 0 ? Math.round((stats.totalTime / stats.count) * 100) / 100 : 0,
+        targetTime: stats.targetTime
+      }));
+    },
+
+    getCostPerHour: () => {
+      const state = get();
+      return state.productionLines.map(line => {
+        // Calcular costo por hora basado en mano de obra y gastos
+        // Asumir costo de mano de obra promedio por hora
+        const hourlyLaborCost = 50; // MXN por hora (configurable)
+        const hourlyOverheadCost = 25; // MXN por hora (configurable)
+
+        const costPerHour = hourlyLaborCost + hourlyOverheadCost;
+        const hourlyCapacity = Math.round((line.capacity / 8) * 100) / 100; // pares por hora (8 horas/día)
+
+        return {
+          lineId: line.id,
+          lineName: line.name,
+          costPerHour,
+          hourlyCapacity
+        };
+      });
+    },
+
+    getLineROI: () => {
+      const state = get();
+      return state.productionLines.map(line => {
+        // Calcular ingresos por línea
+        const lineOrders = state.productionOrders.filter(order => order.assignedTo === line.id && order.status === 'completed');
+        const revenue = lineOrders.reduce((sum, order) => {
+          const model = state.models.find(m => m.id === order.modelId);
+          return sum + (model ? model.financials.clientPrice * order.quantity : 0);
+        }, 0);
+
+        // Calcular costos por línea
+        const costs = lineOrders.reduce((sum, order) => {
+          const model = state.models.find(m => m.id === order.modelId);
+          return sum + (model ? model.financials.totalCost * order.quantity : 0);
+        }, 0);
+
+        const roi = costs > 0 ? Math.round(((revenue - costs) / costs) * 100 * 100) / 100 : 0;
+
+        return {
+          lineId: line.id,
+          lineName: line.name,
+          roi,
+          revenue: Math.round(revenue * 100) / 100,
+          costs: Math.round(costs * 100) / 100
+        };
+      });
+    },
+
+    getBottlenecks: () => {
+      const state = get();
+      const bottlenecks: { type: 'line' | 'operation'; id: string; name: string; severity: 'low' | 'medium' | 'high'; description: string }[] = [];
+
+      // Analizar cuellos de botella en líneas
+      const capacityData = state.getCapacityVsDemand();
+      capacityData.forEach(line => {
+        if (line.status === 'overloaded') {
+          bottlenecks.push({
+            type: 'line',
+            id: line.lineId,
+            name: line.lineName,
+            severity: line.utilization > 150 ? 'high' : 'medium',
+            description: `Línea sobrecargada: ${line.utilization}% de utilización (${line.demand}/${line.capacity} pares/semana)`
+          });
+        }
+      });
+
+      // Analizar cuellos de botella en operaciones
+      const operationData = state.getOperationEfficiency();
+      operationData.forEach(op => {
+        if (op.efficiency < 70) {
+          bottlenecks.push({
+            type: 'operation',
+            id: op.operationId,
+            name: op.operationName,
+            severity: op.efficiency < 50 ? 'high' : 'medium',
+            description: `Operación ineficiente: ${op.efficiency}% eficiencia (${op.avgTime}min vs ${op.targetTime}min objetivo)`
+          });
+        }
+      });
+
+      return bottlenecks.sort((a, b) => {
+        const severityOrder = { high: 3, medium: 2, low: 1 };
+        return severityOrder[b.severity] - severityOrder[a.severity];
+      });
+    },
+
+    // Materials calculations
+    getSupplierAnalysis: () => {
+      const state = get();
+      const supplierStats: { [key: string]: { materials: Material[]; totalValue: number; totalLeadTime: number; qualityScore: number } } = {};
+
+      // Recopilar datos por proveedor
+      state.models.forEach(model => {
+        model.materials.forEach(material => {
+          if (!supplierStats[material.provider]) {
+            supplierStats[material.provider] = {
+              materials: [],
+              totalValue: 0,
+              totalLeadTime: 0,
+              qualityScore: 85 // Score base, se puede ajustar con datos reales
+            };
+          }
+          supplierStats[material.provider].materials.push(material);
+          supplierStats[material.provider].totalValue += material.totalBudget;
+          supplierStats[material.provider].totalLeadTime += material.leadTime || 7; // Default 7 días
+        });
+      });
+
+      return Object.entries(supplierStats).map(([supplier, stats]) => {
+        const avgPrice = stats.materials.reduce((sum, m) => sum + m.netPrice, 0) / stats.materials.length;
+        const avgLeadTime = stats.totalLeadTime / stats.materials.length;
+
+        // Lógica de recomendación basada en precio, tiempo de entrega y calidad
+        let recommendation: 'preferred' | 'alternative' | 'avoid' = 'alternative';
+        if (avgPrice < 50 && avgLeadTime < 10 && stats.qualityScore > 90) {
+          recommendation = 'preferred';
+        } else if (avgPrice > 100 || avgLeadTime > 20 || stats.qualityScore < 70) {
+          recommendation = 'avoid';
+        }
+
+        return {
+          supplier,
+          totalMaterials: stats.materials.length,
+          avgPrice: Math.round(avgPrice * 100) / 100,
+          avgLeadTime: Math.round(avgLeadTime * 100) / 100,
+          qualityScore: stats.qualityScore,
+          totalValue: Math.round(stats.totalValue * 100) / 100,
+          recommendation
+        };
+      }).sort((a, b) => b.totalValue - a.totalValue);
+    },
+
+    getInventoryAlerts: () => {
+      const state = get();
+      const alerts: { materialId: string; materialName: string; currentStock: number; requiredStock: number; status: 'critical' | 'low' | 'normal'; daysToDepletion: number }[] = [];
+
+      state.models.forEach(model => {
+        model.materials.forEach(material => {
+          // Simular stock actual (en producción real vendría de un sistema ERP)
+          const currentStock = Math.floor(Math.random() * material.requiredToBuy * 2); // Simulación
+          const requiredStock = material.requiredToBuy * 1.2; // 20% buffer
+          const consumptionRate = material.consumptionPerPair * model.header.requestedPairs / 30; // diario
+          const daysToDepletion = consumptionRate > 0 ? Math.floor(currentStock / consumptionRate) : 30;
+
+          let status: 'critical' | 'low' | 'normal' = 'normal';
+          if (currentStock < material.minimumOrder) {
+            status = 'critical';
+          } else if (currentStock < requiredStock * 0.5) {
+            status = 'low';
+          }
+
+          if (status !== 'normal') {
+            alerts.push({
+              materialId: material.id,
+              materialName: material.description,
+              currentStock: Math.round(currentStock * 100) / 100,
+              requiredStock: Math.round(requiredStock * 100) / 100,
+              status,
+              daysToDepletion
+            });
+          }
+        });
+      });
+
+      return alerts.sort((a, b) => {
+        const statusOrder = { critical: 3, low: 2, normal: 1 };
+        return statusOrder[b.status] - statusOrder[a.status];
+      });
+    },
+
+    getABCAnalysis: () => {
+      const state = get();
+      const materialValues: { materialId: string; materialName: string; annualConsumption: number; annualValue: number }[] = [];
+
+      // Calcular consumo y valor anual por material
+      state.models.forEach(model => {
+        const annualProduction = model.header.requestedPairs * 12; // Asumir producción mensual
+        model.materials.forEach(material => {
+          const annualConsumption = material.consumptionPerPair * annualProduction;
+          const annualValue = material.netPrice * annualConsumption;
+
+          materialValues.push({
+            materialId: material.id,
+            materialName: material.description,
+            annualConsumption: Math.round(annualConsumption * 100) / 100,
+            annualValue: Math.round(annualValue * 100) / 100
+          });
+        });
+      });
+
+      // Ordenar por valor anual descendente
+      materialValues.sort((a, b) => b.annualValue - a.annualValue);
+
+      // Calcular porcentajes acumulados y clasificar
+      const totalValue = materialValues.reduce((sum, m) => sum + m.annualValue, 0);
+      let cumulativePercentage = 0;
+
+      return materialValues.map(material => {
+        cumulativePercentage += (material.annualValue / totalValue) * 100;
+        let category: 'A' | 'B' | 'C' = 'C';
+        if (cumulativePercentage <= 80) category = 'A';
+        else if (cumulativePercentage <= 95) category = 'B';
+
+        return {
+          ...material,
+          category,
+          percentage: Math.round((material.annualValue / totalValue) * 100 * 100) / 100
+        };
+      });
+    },
+
+    getPurchaseRecommendations: () => {
+      const state = get();
+      const recommendations: { type: 'consolidate' | 'switch_supplier' | 'bulk_purchase' | 'emergency_order'; materials: string[]; savings: number; description: string; priority: 'high' | 'medium' | 'low' }[] = [];
+
+      // 1. Recomendaciones de consolidación de compras
+      const supplierGroups = state.models.reduce((groups, model) => {
+        model.materials.forEach(material => {
+          if (!groups[material.provider]) groups[material.provider] = [];
+          groups[material.provider].push(material.description);
+        });
+        return groups;
+      }, {} as { [supplier: string]: string[] });
+
+      Object.entries(supplierGroups).forEach(([supplier, materials]) => {
+        if (materials.length >= 3) {
+          recommendations.push({
+            type: 'consolidate',
+            materials,
+            savings: materials.length * 50, // Ahorro estimado por consolidación
+            description: `Consolidar ${materials.length} materiales del proveedor ${supplier}`,
+            priority: 'medium'
+          });
+        }
+      });
+
+      // 2. Recomendaciones de cambio de proveedor
+      const supplierAnalysis = state.getSupplierAnalysis();
+      const expensiveSuppliers = supplierAnalysis.filter(s => s.recommendation === 'avoid');
+
+      expensiveSuppliers.forEach(supplier => {
+        const alternative = supplierAnalysis.find(s => s.recommendation === 'preferred');
+        if (alternative) {
+          recommendations.push({
+            type: 'switch_supplier',
+            materials: supplierGroups[supplier.supplier] || [],
+            savings: supplier.totalValue * 0.15, // 15% de ahorro estimado
+            description: `Cambiar de ${supplier.supplier} a ${alternative.supplier} para reducir costos`,
+            priority: 'high'
+          });
+        }
+      });
+
+      // 3. Órdenes de emergencia
+      const inventoryAlerts = state.getInventoryAlerts();
+      const criticalAlerts = inventoryAlerts.filter(alert => alert.status === 'critical');
+
+      if (criticalAlerts.length > 0) {
+        recommendations.push({
+          type: 'emergency_order',
+          materials: criticalAlerts.map(alert => alert.materialName),
+          savings: 0, // No hay ahorro, es preventivo
+          description: `${criticalAlerts.length} materiales críticos requieren orden inmediata`,
+          priority: 'high'
+        });
+      }
+
+      // 4. Compras al por mayor
+      const abcAnalysis = state.getABCAnalysis();
+      const aMaterials = abcAnalysis.filter(m => m.category === 'A');
+
+      if (aMaterials.length > 0) {
+        recommendations.push({
+          type: 'bulk_purchase',
+          materials: aMaterials.slice(0, 3).map(m => m.materialName),
+          savings: aMaterials.reduce((sum, m) => sum + m.annualValue, 0) * 0.1, // 10% descuento bulk
+          description: `Compra al por mayor de materiales categoría A para descuento`,
+          priority: 'medium'
+        });
+      }
+
+      return recommendations.sort((a, b) => {
+        const priorityOrder = { high: 3, medium: 2, low: 1 };
+        return priorityOrder[b.priority] - priorityOrder[a.priority];
+      });
+    },
+
+    getPriceTrends: () => {
+      const state = get();
+      const trends: { materialId: string; materialName: string; currentPrice: number; avgPrice: number; trend: 'up' | 'down' | 'stable'; changePercent: number; supplier: string }[] = [];
+
+      state.models.forEach(model => {
+        model.materials.forEach(material => {
+          // Simular datos históricos (en producción vendría de base de datos)
+          const basePrice = material.netPrice;
+          const historicalPrices = [
+            basePrice * (0.95 + Math.random() * 0.1), // Hace 3 meses
+            basePrice * (0.95 + Math.random() * 0.1), // Hace 2 meses
+            basePrice * (0.95 + Math.random() * 0.1), // Hace 1 mes
+            basePrice // Actual
+          ];
+
+          const avgPrice = historicalPrices.reduce((sum, price) => sum + price, 0) / historicalPrices.length;
+          const changePercent = ((basePrice - avgPrice) / avgPrice) * 100;
+
+          let trend: 'up' | 'down' | 'stable' = 'stable';
+          if (Math.abs(changePercent) > 5) {
+            trend = changePercent > 0 ? 'up' : 'down';
+          }
+
+          trends.push({
+            materialId: material.id,
+            materialName: material.description,
+            currentPrice: Math.round(basePrice * 100) / 100,
+            avgPrice: Math.round(avgPrice * 100) / 100,
+            trend,
+            changePercent: Math.round(changePercent * 100) / 100,
+            supplier: material.provider
+          });
+        });
+      });
+
+      return trends.sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent));
+    },
   }),
   shallow
 );
