@@ -79,22 +79,22 @@ export default function MaterialsTable() {
   };
   
   const columns = [
-    { key: 'description', label: 'Descripción', type: 'text', width: 'w-[140px]' },
+    { key: 'description', label: 'Descripción', type: 'text', width: 'w-[160px]' },
     { key: 'technicalName', label: 'Nombre', type: 'text', width: 'w-[120px]' },
     { key: 'color', label: 'Color', type: 'text', width: 'w-[100px]' },
-    { key: 'provider', label: 'Proveedor', type: 'text', width: 'w-[120px]' },
-    { key: 'priceWithoutVAT', label: 'Precio s/IVA', type: 'number', width: 'w-[110px]' },
-    { key: 'netPrice', label: 'Precio Neto', type: 'number', width: 'w-[110px]' },
-    { key: 'purchaseUnit', label: 'Unidad Compra', type: 'text', width: 'w-[120px]' },
+    { key: 'provider', label: 'Proveedor', type: 'text', width: 'w-[130px]' },
+    { key: 'priceWithoutVAT', label: 'Precio s/IVA', type: 'number', width: 'w-[120px]' },
+    { key: 'netPrice', label: 'Precio Neto', type: 'number', width: 'w-[120px]' },
+    { key: 'purchaseUnit', label: 'Unidad Compra', type: 'text', width: 'w-[130px]' },
     { key: 'width', label: 'Ancho', type: 'number', width: 'w-[90px]' },
     { key: 'consumptionPerPair', label: 'Consumos', type: 'number', width: 'w-[100px]' },
-    { key: 'consumptionUnit', label: 'Unidad Consumo', type: 'text', width: 'w-[130px]' },
-    { key: 'requiredToBuy', label: 'Req. Comprar', type: 'number', readOnly: true, width: 'w-[110px]' },
+    { key: 'consumptionUnit', label: 'Unidad Consumo', type: 'text', width: 'w-[140px]' },
+    { key: 'requiredToBuy', label: 'Req. Comprar', type: 'number', readOnly: true, width: 'w-[120px]' },
     { key: 'minimumOrder', label: 'Unidad', type: 'number', width: 'w-[90px]' },
     { key: 'oc', label: 'OC', type: 'checkbox', width: 'w-[80px]' },
     { key: 'comprado', label: 'Comprado', type: 'checkbox', width: 'w-[110px]' },
-    { key: 'costPerPair', label: 'Costo/Par', type: 'number', readOnly: true, width: 'w-[110px]' },
-    { key: 'totalBudget', label: 'Presupuesto', type: 'number', readOnly: true, width: 'w-[120px]' },
+    { key: 'costPerPair', label: 'Costo/Par', type: 'number', readOnly: true, width: 'w-[120px]' },
+    { key: 'totalBudget', label: 'Presupuesto', type: 'number', readOnly: true, width: 'w-[130px]' },
   ];
 
   return (
@@ -123,7 +123,7 @@ export default function MaterialsTable() {
             ref={headerScrollRef}
             className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-gray-100 dark:scrollbar-track-gray-800"
           >
-            <div className="min-w-[1950px] px-6 py-3">
+            <div className="min-w-[2050px] px-6 py-3">
               {/* Encabezados de columna perfectamente alineados */}
               <div className="flex bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg">
                 {columns.map(col => (
@@ -143,7 +143,7 @@ export default function MaterialsTable() {
             ref={bodyScrollRef}
             className="overflow-x-auto overflow-y-auto max-h-[70vh] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-gray-100 dark:scrollbar-track-gray-800"
           >
-              <div className="min-w-[1950px]">
+              <div className="min-w-[2050px]">
               {materials.length === 0 ? (
                 <div className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
                   <p>No hay materiales registrados para este modelo.</p>
