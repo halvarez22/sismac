@@ -127,12 +127,12 @@ export default function MaterialsTable() {
               {/* Encabezados de columna perfectamente alineados */}
               <div className="flex bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg">
                 {columns.map(col => (
-                  <div key={col.key} className={`flex-shrink-0 px-3 py-4 text-left text-xs font-medium text-purple-600 dark:text-purple-400 uppercase tracking-wider border-r border-gray-200 dark:border-gray-600 last:border-r-0 ${col.width}`}>
-                    {col.label}
+                  <div key={col.key} className={`flex-shrink-0 px-3 py-4 text-left text-xs font-medium text-purple-600 dark:text-purple-400 uppercase tracking-wider border-r border-gray-200 dark:border-gray-600 last:border-r-0 ${col.width} flex items-center`}>
+                    <span className="truncate block w-full">{col.label}</span>
                   </div>
                 ))}
-                <div className="flex-shrink-0 px-3 py-4 text-left text-xs font-medium text-purple-600 dark:text-purple-400 uppercase tracking-wider w-[80px]">
-                  Acciones
+                <div className="flex-shrink-0 px-3 py-4 text-left text-xs font-medium text-purple-600 dark:text-purple-400 uppercase tracking-wider w-[80px] flex items-center">
+                  <span className="truncate block w-full">Acciones</span>
                 </div>
               </div>
             </div>
@@ -154,7 +154,7 @@ export default function MaterialsTable() {
                   {materials.map((material, index) => (
                     <div key={material.id} className="flex hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                       {columns.map(col => (
-                        <div key={col.key} className={`flex-shrink-0 px-3 py-4 border-r border-gray-200 dark:border-gray-600 last:border-r-0 ${col.width}`}>
+                        <div key={col.key} className={`flex-shrink-0 px-3 py-4 border-r border-gray-200 dark:border-gray-600 last:border-r-0 ${col.width} flex items-center`}>
                           {col.key === 'priceWithoutVAT' || col.key === 'netPrice' ? (
                             // Campos de precio con símbolo $
                             <div className="flex items-center">
@@ -194,7 +194,7 @@ export default function MaterialsTable() {
                           )}
                         </div>
                       ))}
-                      <div className="flex-shrink-0 px-3 py-4 w-[80px] flex items-center justify-center">
+                      <div className="flex-shrink-0 px-3 py-4 w-[80px] flex items-center justify-center border-r border-gray-200 dark:border-gray-600 last:border-r-0">
                         {materials.length > 1 && (
                           <button
                             onClick={() => removeMaterial(material.id)}
