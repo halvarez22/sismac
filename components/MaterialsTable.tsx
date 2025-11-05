@@ -123,15 +123,15 @@ export default function MaterialsTable() {
             ref={headerScrollRef}
             className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-gray-100 dark:scrollbar-track-gray-800"
           >
-            <div className="min-w-[2050px] px-6 py-3">
+            <div className="min-w-[2050px] px-1 py-3">
               {/* Encabezados de columna perfectamente alineados */}
               <div className="flex bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg">
                 {columns.map(col => (
-                  <div key={col.key} className={`flex-shrink-0 px-3 py-4 text-center text-xs font-medium text-purple-600 dark:text-purple-400 uppercase tracking-wider border-r border-gray-200 dark:border-gray-600 last:border-r-0 ${col.width} flex items-center justify-center`}>
+                  <div key={col.key} className={`flex-shrink-0 px-1 py-4 text-center text-xs font-medium text-purple-600 dark:text-purple-400 uppercase tracking-wider border-r border-gray-200 dark:border-gray-600 last:border-r-0 ${col.width} flex items-center justify-center`}>
                     <span className="truncate block w-full">{col.label}</span>
                   </div>
                 ))}
-                <div className="flex-shrink-0 px-3 py-4 text-left text-xs font-medium text-purple-600 dark:text-purple-400 uppercase tracking-wider w-[80px] flex items-center">
+                <div className="flex-shrink-0 px-1 py-4 text-center text-xs font-medium text-purple-600 dark:text-purple-400 uppercase tracking-wider w-[80px] flex items-center justify-center">
                   <span className="truncate block w-full">Acciones</span>
                 </div>
               </div>
@@ -143,9 +143,9 @@ export default function MaterialsTable() {
             ref={bodyScrollRef}
             className="overflow-x-auto overflow-y-auto max-h-[70vh] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-gray-100 dark:scrollbar-track-gray-800"
           >
-              <div className="min-w-[2050px]">
+              <div className="min-w-[2050px] px-0">
               {materials.length === 0 ? (
-                <div className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                <div className="px-1 py-12 text-center text-gray-500 dark:text-gray-400">
                   <p>No hay materiales registrados para este modelo.</p>
                   <p className="text-sm mt-2">Haz clic en "Agregar Material" para comenzar.</p>
                 </div>
@@ -154,7 +154,7 @@ export default function MaterialsTable() {
                   {materials.map((material, index) => (
                     <div key={material.id} className="flex hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                       {columns.map(col => (
-                        <div key={col.key} className={`flex-shrink-0 px-3 py-4 border-r border-gray-200 dark:border-gray-600 last:border-r-0 ${col.width} flex items-center`}>
+                        <div key={col.key} className={`flex-shrink-0 px-1 py-4 border-r border-gray-200 dark:border-gray-600 last:border-r-0 ${col.width} flex items-center justify-center`}>
                           {col.key === 'priceWithoutVAT' || col.key === 'netPrice' ? (
                             // Campos de precio con símbolo $
                             <div className="flex items-center justify-center">
@@ -194,7 +194,7 @@ export default function MaterialsTable() {
                           )}
                         </div>
                       ))}
-                      <div className="flex-shrink-0 px-3 py-4 w-[80px] flex items-center justify-center border-r border-gray-200 dark:border-gray-600 last:border-r-0">
+                      <div className="flex-shrink-0 px-1 py-4 w-[80px] flex items-center justify-center border-r border-gray-200 dark:border-gray-600 last:border-r-0">
                         {materials.length > 1 && (
                           <button
                             onClick={() => removeMaterial(material.id)}
