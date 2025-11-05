@@ -127,7 +127,7 @@ export default function MaterialsTable() {
               {/* Encabezados de columna perfectamente alineados */}
               <div className="flex bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg">
                 {columns.map(col => (
-                  <div key={col.key} className={`flex-shrink-0 px-3 py-4 text-left text-xs font-medium text-purple-600 dark:text-purple-400 uppercase tracking-wider border-r border-gray-200 dark:border-gray-600 last:border-r-0 ${col.width} flex items-center`}>
+                  <div key={col.key} className={`flex-shrink-0 px-3 py-4 text-center text-xs font-medium text-purple-600 dark:text-purple-400 uppercase tracking-wider border-r border-gray-200 dark:border-gray-600 last:border-r-0 ${col.width} flex items-center justify-center`}>
                     <span className="truncate block w-full">{col.label}</span>
                   </div>
                 ))}
@@ -157,14 +157,14 @@ export default function MaterialsTable() {
                         <div key={col.key} className={`flex-shrink-0 px-3 py-4 border-r border-gray-200 dark:border-gray-600 last:border-r-0 ${col.width} flex items-center`}>
                           {col.key === 'priceWithoutVAT' || col.key === 'netPrice' ? (
                             // Campos de precio con símbolo $
-                            <div className="flex items-center">
+                            <div className="flex items-center justify-center">
                               <span className="text-gray-500 dark:text-gray-400 mr-1">$</span>
                               <input
                                 type={col.type}
                                 value={material[col.key as keyof Material] as string | number}
                                 readOnly={col.readOnly}
                                 onChange={(e) => handleInputChange(material.id, col.key as keyof Material, e.target.value)}
-                                className={`w-full text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 dark:text-gray-100 ${col.readOnly ? 'bg-gray-100 dark:bg-gray-600' : 'bg-white dark:bg-gray-700'} transition-colors`}
+                                className={`w-full text-center text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 dark:text-gray-100 ${col.readOnly ? 'bg-gray-100 dark:bg-gray-600' : 'bg-white dark:bg-gray-700'} transition-colors`}
                                 aria-label={col.label}
                                 title={String(material[col.key as keyof Material] || '')}
                                 step={col.type === 'number' ? '0.01' : undefined}
@@ -186,7 +186,7 @@ export default function MaterialsTable() {
                               value={material[col.key as keyof Material] as string | number}
                               readOnly={col.readOnly}
                               onChange={(e) => handleInputChange(material.id, col.key as keyof Material, e.target.value)}
-                              className={`w-full text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 dark:text-gray-100 ${col.readOnly ? 'bg-gray-100 dark:bg-gray-600' : 'bg-white dark:bg-gray-700'} transition-colors`}
+                              className={`w-full text-center text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 dark:text-gray-100 ${col.readOnly ? 'bg-gray-100 dark:bg-gray-600' : 'bg-white dark:bg-gray-700'} transition-colors`}
                               aria-label={col.label}
                               title={`${col.label}: ${String(material[col.key as keyof Material] || '')}`}
                               step={col.type === 'number' ? '0.01' : undefined}
