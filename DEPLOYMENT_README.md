@@ -108,12 +108,12 @@ git push -u origin main
 Crea un archivo llamado `.env.local` en la raíz del proyecto y pega tus credenciales de Firebase:
 
 ```env
-VITE_FIREBASE_API_KEY=AIzaSyC...
-VITE_FIREBASE_AUTH_DOMAIN=tu-proyecto.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=tu-proyecto
-VITE_FIREBASE_STORAGE_BUCKET=tu-proyecto.appspot.com
-VITE_FIREBASE_MESSAGING_SENDER_ID=123456789
-VITE_FIREBASE_APP_ID=1:123456789:web:abcdef123456
+VITE_FIREBASE_API_KEY=AIzaSyBpPP2uuwGtLqsWZXZYVH0AhjrT6upzM6I
+VITE_FIREBASE_AUTH_DOMAIN=sismac-6e1cb.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=sismac-6e1cb
+VITE_FIREBASE_STORAGE_BUCKET=sismac-6e1cb.firebasestorage.app
+VITE_FIREBASE_MESSAGING_SENDER_ID=384307836083
+VITE_FIREBASE_APP_ID=1:384307836083:web:d6c41cde99dddbcb35acc6
 ```
 
 ### 3.2 Probar Localmente
@@ -148,12 +148,12 @@ Si todo funciona, deberías ver la aplicación en `http://localhost:3000`
 
 | Name | Value |
 |------|-------|
-| `VITE_FIREBASE_API_KEY` | `AIzaSyC...` |
-| `VITE_FIREBASE_AUTH_DOMAIN` | `tu-proyecto.firebaseapp.com` |
-| `VITE_FIREBASE_PROJECT_ID` | `tu-proyecto` |
-| `VITE_FIREBASE_STORAGE_BUCKET` | `tu-proyecto.appspot.com` |
-| `VITE_FIREBASE_MESSAGING_SENDER_ID` | `123456789` |
-| `VITE_FIREBASE_APP_ID` | `1:123456789:web:abcdef123456` |
+| `VITE_FIREBASE_API_KEY` | `AIzaSyBpPP2uuwGtLqsWZXZYVH0AhjrT6upzM6I` |
+| `VITE_FIREBASE_AUTH_DOMAIN` | `sismac-6e1cb.firebaseapp.com` |
+| `VITE_FIREBASE_PROJECT_ID` | `sismac-6e1cb` |
+| `VITE_FIREBASE_STORAGE_BUCKET` | `sismac-6e1cb.firebasestorage.app` |
+| `VITE_FIREBASE_MESSAGING_SENDER_ID` | `384307836083` |
+| `VITE_FIREBASE_APP_ID` | `1:384307836083:web:d6c41cde99dddbcb35acc6` |
 
 3. Haz clic en **"Save"**
 
